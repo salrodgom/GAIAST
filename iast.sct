@@ -4,4 +4,5 @@ make all
 gnuplot png.gp
 display iast.png
 make clean
+rm iso?.dat isotermaN.dat
 exit 0
