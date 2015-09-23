@@ -1,4 +1,4 @@
-LINKFLAGS_FOR=-O3 -march=native -fbounds-check
+LINKFLAGS_FOR=-O3 -march=native
 COMP_FOR = gfortran
 all:
 	${COMP_FOR} ${LINKFLAGS_FOR} -c iast.f90
