@@ -1,29 +1,96 @@
-PROGRAM iastdesarrollo
- IMPLICIT NONE
+module mod_random
+ implicit none
+ private
+ public init_random_seed, randreal, randint
+contains
+ ! From http://gcc.gnu.org/onlinedocs/gfortran/RANDOM_005fSEED.html
+ subroutine init_random_seed()
+  use iso_fortran_env, only: int64
+  implicit none
+  integer, allocatable :: seed(:)
+  integer :: i, n, un, istat, dt(8), pid
+  integer(int64) :: t
+        
+  call random_seed(size=n)
+  allocate(seed(n))
+  ! First try if the OS provides a random number generator
+  open(newunit=un, file="/dev/urandom", access="stream", &
+  form="unformatted", action="read", status="old", iostat=istat)
+  if (istat == 0) then
+   read(un) seed
+  close(un)
+  else
+  ! Fallback to XOR:ing the current time and pid. The PID is useful in case one launches multiple instances of the same program in parallel.
+   call system_clock(t)
+   if (t == 0) then
+    call date_and_time(values=dt)
+    t = (dt(1) - 1970) * 365_int64 * 24 * 60 * 60 * 1000 &
+      + dt(2) * 31_int64 * 24 * 60 * 60 * 1000 &
+      + dt(3) * 24_int64 * 60 * 60 * 1000 &
+      + dt(5) * 60 * 60 * 1000 &
+      + dt(6) * 60 * 1000 + dt(7) * 1000 &
+      + dt(8)
+   end if
+   pid = getpid()
+   t = ieor(t, int(pid, kind(t)))
+   do i = 1, n
+    seed(i) = lcg(t)
+   end do
+  end if
+  call random_seed(put=seed)
+ contains
+ ! This simple PRNG might not be good enough for real work, but is sufficient for seeding a better PRNG.
+  function lcg(s)
+   integer :: lcg
+   integer(int64) :: s
+   if (s == 0) then
+    s = 104729
+   else
+   s = mod(s, 4294967296_int64)
+   end if
+   s = mod(s * 279470273_int64, 4294967291_int64)
+   lcg = int(mod(s, int(huge(0), int64)), kind(0))
+  end function
+ end subroutine
+ 
+    ! Random real (0.0 <= r < 1.0)
+ real function randreal()
+  call random_number(randreal)
+ end function
+
+ ! Random int (a <= r <= b)
+ integer function randint(a, b)
+  integer, intent(in) :: a, b
+  if (a > b) stop "a must be less than or equal to b"
+   randint = a + int(randreal() * (b - a + 1))
+  end function
+end module
+
+program iast_desarrollo_GA
+ use mod_random
+ implicit none
 !========================================================================
 ! VARIABLES
 !========================================================================
- REAL::comp,tol,concx1,concx2,concy1,concy2,h1,h2,p,presion1,presion2,presiontotal,conc1,conc2,conc3,n,n1,n2
- REAL::a1,a2,inferior,superior,punto,s1,s2
- INTEGER::err_apertura = 0,i,k,l,j,intervalos
- CHARACTER(100):: line,ajuste,divisiones1,divisiones2,archivo1,archivo2
- REAL,ALLOCATABLE::x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
- REAL,ALLOCATABLE::e_coef1(:),e_coef2(:)
- REAL,ALLOCATABLE::puntos1(:),puntos2(:),funcion1(:),funcion2(:)
-
+ real             :: comp,tol,concx1,concx2,concy1,concy2
+ real             :: h1,h2,p,presion1,presion2,n,n1,n2
+ real             :: a1,a2,inferior,superior,punto,s1,s2
+ integer          :: err_apertura = 0,i,ii,k,l,j,intervalos,npar
+ character(100)   :: line,ajuste,test_name
+ real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
+ real,allocatable :: e_coef1(:),e_coef2(:),param(:,:),eparam(:,:)
+ real,allocatable :: puntos1(:),puntos2(:),funcion1(:),funcion2(:)
+ ! llamo a la semilla para generar los numeros pseudoaleatorios
+ !call get_seed(seed)
+ call init_random_seed()
 !========================================================================
 ! PARAMETROS
 !========================================================================
- !WRITE(6,*)"AJUSTE"
- READ(5,*)ajuste
- !WRITE(6,*)"INTERVALOS"
- READ(5,*)intervalos
- !WRITE(6,*)"TOLERANCIA"
- READ(5,*)tol
- !WRITE(6,*)"CONCENTRACION GAS COMPONENTE 1"
- READ(5,*)concy1
- !WRITE(6,*)"CONCENTRACION GAS COMPONENTE 2"
- READ(5,*)concy2
+ read(5,*)ajuste
+ read(5,*)intervalos
+ read(5,*)tol
+ read(5,*)concy1
+ read(5,*)concy2
 ! ajuste = "toth"    !seleccion del ajuste 
 ! intervalos = 10000 !numero de puntos para calcular el area
 ! tol = 0.001        !tolerancia para igualar areas
@@ -33,199 +100,73 @@ PROGRAM iastdesarrollo
 ! LECTURA ISOTERMAS 
 !========================================================================
  !abrimos el archivo con las isotermas
- OPEN(UNIT=100,FILE="isoterma1.dat",STATUS='old', IOSTAT=err_apertura)
-      !inicializamos el contador
-      k=0 
-      ! esta foma de escribir los bucles nos permite dar nombre a cada bucle
-      ! este bucle nos cuenta el numero de datos que tenemos en el archivo
-      do0: DO  
-           !con '(A)' le decimos que lo que va a leer es un caracter
-           READ (100,'(A)',IOSTAT=err_apertura) line 
-           IF( err_apertura /= 0 ) EXIT do0
-           k=k+1
-      END DO do0
-      ! dimensionamos los vectores de datos con el numero de datos en el archivo
-      ALLOCATE(x1(1:k),y1(1:k))
-      ! rebobinamos el archivo para leer los datos
-      REWIND(100)
-
-      ! leemos los datos del archivo y los escribimos en los valores
-      do1: DO i=1,k
-           READ (100,'(A)',IOSTAT=err_apertura) line
-           IF(err_apertura/=0) EXIT do1
-           READ(line,*) x1(i),y1(i)
-      END DO do1
- CLOSE(100)
-!-----------------------------------------------------------------------
- OPEN(UNIT=100,FILE="isoterma2.dat",STATUS='old', IOSTAT=err_apertura)
-     l=0
-     do2: DO
-          READ (100,'(A)',IOSTAT=err_apertura) line
-          IF( err_apertura /= 0 ) EXIT do2
-          l=l+1
-     END DO do2
-     ALLOCATE(x2(1:l),y2(1:l))
-     REWIND(100)
-     do3: DO i=1,l
-          READ (100,'(A)',IOSTAT=err_apertura) line
-          IF(err_apertura/=0) EXIT do3
-          READ(line,*) x2(i),y2(i)
-     END DO do3
- CLOSE(100)
+ nisothermpure: do ii=1,2
+  write (test_name, '( "isoterma", I1, ".dat" )' ) ii
+  call system ("cp " // test_name // " isotermaN.dat")
+  open(unit=100,file="isotermaN.dat",status='old',iostat=err_apertura)
+  if(err_apertura/=0) stop '[error] isotermaN.dat'
+  k=0 
+  do0: do
+   READ (100,'(A)',IOSTAT=err_apertura) line 
+   IF( err_apertura /= 0 ) EXIT do0
+   k=k+1
+  END DO do0
+  if(ii==1) allocate(x1(1:k),y1(1:k))
+  if(ii>=2) allocate(x2(1:k),y2(1:k))
+  rewind(100)
+  do1: do i=1,k
+   read (100,'(A)',IOSTAT=err_apertura) line
+   if(err_apertura/=0) EXIT do1
+   if(ii==1)read(line,*) x1(i),y1(i)
+   if(ii>=2)read(line,*) x2(i),y2(i)
+  end do do1
+  close(100)
+ end do nisothermpure
 
 !========================================================================
 ! AJUSTE ISOTERMAS
 !========================================================================
-
 ! utilizamos gnuplot para hacer el ajuste y recuperamos los valores a traves del archivo coeficientes
 !!!!mantener el archivo ajustelangmuir en la misma carpeta donde se corra el programa
- SELECT CASE (ajuste)
-        case('freundlich')
-         allocate(coef1(0:1),coef2(0:1))
-         ALLOCATE(e_coef1(0:1),e_coef2(0:1))
-          !-> isoterma1   
-              CALL SYSTEM ('cp isoterma1.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustefreundlich.gnu')
-              call system('mv ajuste.eps ajuste1.eps')
-              call sleep(2)
-!a               = 2.10888          +/- 0.06313      (2.993%)
-!b               = 2.71054          +/- 0.2272       (8.381%)
-              CALL SYSTEM ("grep 'a               =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              CALL SYSTEM ("grep 'b               =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")
-              OPEN(unit=100,file="coeficientes",status='old')
-                   READ(100,*)coef1(0),e_coef1(0)  !nmax
-                   READ(100,*)coef1(1),e_coef1(1)  !alfa
-              CLOSE(100)
-              coef1(1)=1.0/coef1(1)
-              !CALL SYSTEM ('rm coeficientes fit.log isotermaN.dat')
-          !-> isoterma2
-              CALL SYSTEM ('cp isoterma2.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustefreundlich.gnu')
-              call system('mv ajuste.eps ajuste2.eps')
-              call sleep(2)
-              CALL SYSTEM ("grep 'a               =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              CALL SYSTEM ("grep 'b               =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")
-              OPEN(unit=100,file="coeficientes",status='old')
-                  READ(100,*)coef2(0),e_coef2(0)  !nmax
-                  READ(100,*)coef2(1),e_coef2(1)  !alfa
-              CLOSE(100)
-              coef2(1)=1.0/coef2(1)
-              !CALL SYSTEM ('rm coeficientes fit.log isotermaN.dat')
-        CASE ("langmuir") !n = nmax*alfa*P/(1+alfa*P)______________________________________
-              ALLOCATE(coef1(0:1),coef2(0:1))
-              ALLOCATE(e_coef1(0:1),e_coef2(0:1))
-          !-> isoterma1   
-              CALL SYSTEM ('cp isoterma1.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustelangmuir.gnu')
-              call system('mv ajuste.eps ajuste1.eps')
-              call sleep(2)
-              CALL SYSTEM ("grep 'Nmax            =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              CALL SYSTEM ("grep 'alfa            =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")
-              OPEN(unit=100,file="coeficientes",status='old')
-                   READ(100,*)coef1(0),e_coef1(0)  !nmax
-                   READ(100,*)coef1(1),e_coef1(1)  !alfa
-              CLOSE(100)
-              CALL SYSTEM ('rm coeficientes fit.log isotermaN.dat')
-          !-> isoterma2
-              CALL SYSTEM ('cp isoterma2.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustelangmuir.gnu')
-              call system('mv ajuste.eps ajuste2.eps')
-              call sleep(2)
-              CALL SYSTEM ("grep 'Nmax            =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              CALL SYSTEM ("grep 'alfa            =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")              
-              OPEN(unit=100,file="coeficientes",status='old')
-                  READ(100,*)coef2(0),e_coef2(0)  !nmax
-                  READ(100,*)coef2(1),e_coef2(1)  !alfa
-              CLOSE(100)
-              CALL SYSTEM ('rm coeficientes fit.log isotermaN.dat')
-        CASE ("toth") !n = nmax*alfa*P/(1+(alfa*P)^c)^(1/c)_________________________________
-              ALLOCATE(coef1(0:2),coef2(0:2))
-              ALLOCATE(e_coef1(0:1),e_coef2(0:1))
-          !-> isoterma1
-              CALL SYSTEM ('cp isoterma1.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustetoth.gnu')
-              call system('mv ajuste.eps ajuste1.eps')
-              call sleep(2)
-              call system ("grep 'Nmax            =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              call system ("grep 'alfa            =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")
-              call system ("grep 'c               =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")
-              
-              OPEN(unit=100,file="coeficientes",status='old')
-                   READ(100,*)coef1(0),e_coef1(0)
-                   READ(100,*)coef1(1),e_coef1(1)
-                   READ(100,*)coef1(2),e_coef1(2)
-              CLOSE(100)
-             
-              CALL SYSTEM ('rm coeficientes isotermaN.dat')
-          !-> isoterma2
-              CALL SYSTEM ('cp isoterma2.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustetoth.gnu')
-              call system('mv ajuste.eps ajuste2.eps')
-              call sleep(2)
-              call system ("grep 'Nmax            =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              call system ("grep 'alfa            =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")
-              call system ("grep 'c               =' fit.log  | tail -n1 | awk '{print $3,$5}' >> coeficientes")
-              OPEN(unit=100,file="coeficientes",status='old')
-                   READ(100,*)coef2(0),e_coef2(0)  
-                   READ(100,*)coef2(1),e_coef2(1)
-                   READ(100,*)coef2(2),e_coef2(2)
-              CLOSE(100)
-              CALL SYSTEM ('rm coeficientes isotermaN.dat')
-        CASE ("jensen") !n = K*P/(1+(K*P/(alfa*(1+k*P)))**c)**(1/c)__________________________
-              ALLOCATE(coef1(0:3),coef2(0:3))
-              ALLOCATE(e_coef1(0:3),e_coef2(0:3))
-          !-> isoterma1
-              CALL SYSTEM ('cp isoterma1.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustejensen.gnu')
-              call system('mv ajuste.eps ajuste1.eps')
-              CALL SYSTEM ("grep 'K1              =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              CALL SYSTEM ("grep 'alfa            =' fit.log  | tail -n1 | awk '{print $3,$5}' >>  coeficientes")
-              CALL SYSTEM ("grep 'k2              =' fit.log  | tail -n1 | awk '{print $3,$5}' >>  coeficientes")
-              CALL SYSTEM ("grep 'c               =' fit.log  | tail -n1 | awk '{print $3,$5}' >>  coeficientes")
-              OPEN(unit=100,file="coeficientes",status='old')
-                   READ(100,*)coef1(0)  !K1
-                   READ(100,*)coef1(1)  !alfa
-                   READ(100,*)coef1(2)  !k2
-                   READ(100,*)coef1(3)  !c
-              write(6,*)(coef1(i),i=0,3)
-              CLOSE(100)
-              CALL SYSTEM ('rm coeficientes isotermaN.dat')
-          !-> isoterma2
-              CALL SYSTEM ('cp isoterma2.dat isotermaN.dat')
-              CALL SYSTEM ('nohup ./ajustejensen.gnu')
-              call system('mv ajuste.eps ajuste2.eps')
-              CALL SYSTEM ("grep 'K1              =' fit.log  | tail -n1 | awk '{print $3,$5}' >  coeficientes")
-              CALL SYSTEM ("grep 'alfa            =' fit.log  | tail -n1 | awk '{print $3,$5}' >>  coeficientes")
-              CALL SYSTEM ("grep 'k2              =' fit.log  | tail -n1 | awk '{print $3,$5}' >>  coeficientes")
-              CALL SYSTEM ("grep 'c               =' fit.log  | tail -n1 | awk '{print $3,$5}' >>  coeficientes")
-              OPEN(unit=100,file="coeficientes",status='old')
-                  READ(100,*)coef2(0)  !K
-                  READ(100,*)coef2(1)  !alfa
-                  READ(100,*)coef2(2)  !k
-                  READ(100,*)coef2(3)  !c
-              write(6,*)(coef1(i),i=0,3)
-              CLOSE(100)
-              CALL SYSTEM ('rm coeficientes fit.log isotermaN.dat')
- END SELECT
+ select case (ajuste)
+  case("freundlich")!n = a*x**b 
+   npar=2
+  case ("langmuir") !n = nmax*alfa*P/(1+alfa*P)
+   npar=2
+  case ("toth")
+   npar=3
+  case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c)
+   npar=4
+ end select
+ allocate(param(2,0:npar-1),eparam(2,0:npar-1))
+ allocate(coef1(0:npar-1),coef2(0:npar-1),e_coef1(0:npar-1),e_coef2(0:npar-1))
+ do i=1,2
+  coef1=0
+  coef2=0
+  write (test_name, '( "isoterma", I1, ".dat" )' ) i
+  write (6, '( "Fitting isoterma", I1, ".dat" )' ) i
+  call system ("cp " // test_name // " isotermaN.dat")
+  call fitgen(coef1,e_coef1,npar,ajuste)
+  do j=0,npar-1
+   param(i,j)=coef1(j)
+   eparam(i,j)=e_coef1(j)
+   !write(6,*)param(i,j),eparam(i,j)
+  end do
+ end do
+ do j=0,npar-1
+  coef1(j)=param(1,j)
+  coef2(j)=param(2,j)
+  e_coef1(j)=eparam(1,j)
+  e_coef2(j)=eparam(2,j)
+ end do
+ deallocate(param,eparam) ! provisional
+ 
 !========================================================================
 ! CALCULO DE  AREAS
 !========================================================================
-
-!vemos el rango de valores de presion de las isotermas para elegir las divisiones
- IF (abs(x1(1)-x1(k))>100)THEN
-     divisiones1 = "logaritmica"
- ELSE
-     divisiones1 = "linear"
- END IF
-
- IF (abs(x2(1)-x2(l))>100) THEN
-     divisiones2 = "logaritmica"
- ELSE
-     divisiones2 = "linear"
- END IF
+ l=size(x2)
+ k=size(x1)
  ALLOCATE (puntos1(0:intervalos),puntos2(0:intervalos))
- !SELECT CASE (divisiones1)
- ! CASE ("logaritmica")
    IF (x1(1)<x2(1)) THEN
     inferior =log10(x1(1))
    ELSE
@@ -240,24 +181,6 @@ PROGRAM iastdesarrollo
    DO i=0,intervalos
     puntos1(i)=10**(inferior+i*h1) 
    END DO
-  !CASE ("linear")
-  ! IF (x1(1)<x2(1)) THEN
-  !  inferior =x1(1)
-  ! ELSE
-  !  inferior =x2(1)
-  ! END IF
-  ! IF (x1(k)<x2(l)) THEN
-  !  superior =x2(l)
-  ! ELSE
-  !  superior =x1(k)
-  ! END IF
-  ! h1 = real((superior-inferior)/intervalos)
-  ! DO i=0,intervalos
-  !      puntos1(i) = inferior+i*h1
-  ! END DO
- !END SELECT
- !SELECT CASE (divisiones2)
-  !      CASE ("logaritmica")
   IF (x1(1)<x2(1)) THEN
         inferior =log10(x1(1))
   ELSE
@@ -272,22 +195,6 @@ PROGRAM iastdesarrollo
   DO i=0,intervalos
      puntos2(i)=10**(inferior+i*h2)
   END DO
- !       CASE ("linear")
- !            IF (x1(1)<x2(1)) THEN
- !                  inferior =x1(1)
- !            ELSE
- !                  inferior =x2(1)
- !            END IF
- !            IF (x1(k)<x2(l)) THEN
- !                  superior =x2(l)
- !            ELSE
- !                  superior =x1(k)
- !            END IF
- !            h2 = real((superior-inferior)/intervalos)
- !            DO i=0,intervalos
- !                 puntos2(i) = inferior+i*h2
- !            END DO
- !END SELECT
  ALLOCATE(funcion1(0:intervalos),funcion2(0:intervalos))
  SELECT CASE (ajuste)
         case('freundlich')
@@ -304,15 +211,15 @@ PROGRAM iastdesarrollo
              !a1 y a2 son el extremo inferior de la integral definida para ambas funciones
              a1 = coef1(0)*(inferior-(log(1+coef1(1)*inferior)/coef1(1)))
              a2 = coef2(0)*(inferior-(log(1+coef2(1)*inferior)/coef2(1)))
-             ALLOCATE(PI1(1:intervalos),PI2(1:intervalos))
-             DO i=1,intervalos-1
+             allocate(PI1(1:intervalos),PI2(1:intervalos))
+             do i=1,intervalos-1
                  ! punto = inferior +i*h
                   ! la integral de langmuir es : nmax*[p-ln(1+alfa*p)/alfa]
                   PI1(i)= coef1(0)*(punto-(log(1+coef1(1)*punto)/coef1(1)))-a1
                   PI2(i)= coef2(0)*(punto-(log(1+coef2(1)*punto)/coef2(1)))-a2
                   funcion1(i) = coef1(0)*coef1(1)*punto/(1+coef1(1)*punto)
                   funcion2(i) = coef2(0)*coef2(1)*punto/(1+coef2(1)*punto)
-             END DO
+             end do
              deallocate(PI1,PI2)
         CASE ("toth")
              DO i=0,intervalos
@@ -324,161 +231,252 @@ PROGRAM iastdesarrollo
         CASE ("jensen")
              DO i=0,intervalos
                   funcion1(i) = coef1(0)*puntos1(i)/(1+(coef1(0)*puntos1(i)/&
-                               (coef1(1)*(1+coef1(2)*puntos1(i))))**coef1(3))**(1/coef1(3))
+                               (coef1(1)*(1+coef1(3)*puntos1(i))))**coef1(2))**(1/coef1(2))
                   funcion2(i) = coef2(0)*puntos2(i)/(1+(coef2(0)*puntos2(i)/&
-                               (coef2(1)*(1+coef2(2)*puntos2(i))))**coef2(3))**(1/coef2(3))
+                               (coef2(1)*(1+coef2(3)*puntos2(i))))**coef2(2))**(1/coef2(2))
              END DO
  END SELECT
- OPEN(221,file='iso1.dat')
- OPEN(222,file='iso2.dat')
- do i=0,intervalos
-  WRITE(221,*)puntos1(i),funcion1(i)
-  WRITE(222,*)puntos2(i),funcion2(i)
- end do
- close(221)
- close(222)
+ 
 ! calculamos el area bajo la curva de ajuste utilizando el metodo de los trapecios
  ALLOCATE (area1(0:intervalos),area2(0:intervalos),PI1(0:intervalos),PI2(0:intervalos))
  DO i=0,intervalos-1
-      area1(i)= real((funcion1(i)+funcion1(i+1))*h1/2)
-      area2(i)= real((funcion2(i)+funcion2(i+1))*h2/2)
+      area1(i)= real((funcion1(i)+funcion1(i+1))*h1/2)!/puntos1(i)
+      area2(i)= real((funcion2(i)+funcion2(i+1))*h2/2)!/puntos2(i)
       s1 = s1 + area1(i)
       s2 = s2 + area2(i)
       PI1(i+1)= s1
       PI2(i+1)= s2
+      !
  END DO
+ 
+ OPEN(221,file='iso1.dat')
+ OPEN(222,file='iso2.dat')
+ do i=1,intervalos
+  WRITE(221,*)puntos1(i),funcion1(i),pi1(i)
+  WRITE(222,*)puntos2(i),funcion2(i),pi2(i)
+ end do
+ close(221)
+ close(222)
+ 
 !========================================================================
-! IAST
+! IAST (binary mixture)
 !========================================================================
- OPEN(unit=104,file='adsorcion.dat')
- DO i=1,intervalos
-      DO j=1,intervalos
-          comp = abs(PI1(i)-PI2(j))
-          IF (comp <= tol) THEN
-               IF (abs(x1(1)-x1(k))>100)THEN
-                  presion1 = 10**(inferior+i*h1)
-               ELSE
-                   presion1 = inferior+i+h1
-               END IF
-               IF (abs(x2(1)-x2(l))>100) THEN
-                  presion2 = 10**(inferior+j*h2)
-               ELSE
-                   presion2 = inferior+j*h2
-               END IF
-               concx1 = presion2*concy1/(concy2*presion1+concy1*presion2)
-               concx2 = 1-concx1
-               
-               p = presion1*concx1/concy1
-               n1 = funcion1(i)*concx1
-               n2 = funcion2(j)*concx2
-               n = n1+n2
-               WRITE(104,*)p,n1,n2,n
-          END IF 
-     END DO
- END DO
- CLOSE(104)
+ open(unit=104,file='adsorcion.dat')
+ do i=1,intervalos
+  do j=1,intervalos
+    comp = abs(PI1(i)-PI2(j))           ! las presiones se igualan
+    if (comp <= tol) then              ! ...
+     if (abs(x1(1)-x1(k))>100) then
+      presion1 = 10**(inferior+i*h1)
+     else
+      presion1 = inferior+i+h1
+     end if
+     if (abs(x2(1)-x2(l))>100) then
+      presion2 = 10**(inferior+j*h2)
+     else
+      presion2 = inferior+j*h2
+     end if
+     ! ... concentraciones ( 2 componentes )
+      concx1 = presion2*concy1 / (concy2*presion1 + concy1*presion2)
+      concx2 = 1.0 - concx1
+     ! ... presion total y loading
+      p = presion1*concx1/concy1
+      n1 = funcion1(i)*concx1
+      n2 = funcion2(j)*concx2
+      n = n1+n2
+      write(104,*)p,n1,n2,n
+     end if
+  end do
+ end do
+ close(104)
  call system ("awk '{print $1,$2,$3,$4}' adsorcion.dat | sort -gk1 > c")
  call system ("mv c adsorcion.dat")
- STOP 'Winter is coming'
+ ! deallocate( todo )
+ stop
  CONTAINS
-! 
- subroutine get_seed(seed)
+!
+! real function IntegrateIsotherm(x0,x1,x,integration_points)
+!  implicit none
+!  integer              ::  i,integration_points
+!  real                 ::  delta
+!  real                 ::  x0,x
+!  real                 ::  factor
+!  delta=(x1-x0)/(integration_points)
+!  do i = 0,integration_points
+!   factor = 1.0
+!   if (i==0.or.i==integration_points-1) factor = 3.0/8.0
+!   if (i==1.or.i==integration_points-2) factor = 7.0/6.0
+!   if (i==2.or.i==integration_points-3) factor = 23.0/24.0
+!   x = x0 + delta*(0.5+i)
+!   IntegrateIsotherm=IntegrateIsotherm+factor*delta*/x
+!   
+!  end do
+!
+ subroutine fitgen(a,ea,n,funk)
+! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
+! un ajuste optimo minimizando el coste a una lectura de la isoterma
   implicit none
-  integer, intent(out) :: seed
-! local
-  integer   day,hour,i4_huge,milli,minute,month,second,year
-  parameter (i4_huge=2147483647)
-  double precision temp
-  character*(10) time
-  character*(8) date
-  call date_and_time (date,time)
-  read (date,'(i4,i2,i2)')year,month,day
-  read (time,'(i2,i2,i2,1x,i3)')hour,minute,second,milli
-  temp=0.0D+00
-  temp=temp+dble(month-1)/11.0D+00
-  temp=temp+dble(day-1)/30.0D+00
-  temp=temp+dble(hour)/23.0D+00
-  temp=temp+dble(minute)/59.0D+00
-  temp=temp+dble(second)/59.0D+00
-  temp=temp+dble(milli)/999.0D+00
-  temp=temp/6.0D+00
-!  Force 0 < TEMP <= 1.
-  DO
-    IF(temp<=0.0D+00 )then
-       temp=temp+1.0D+00
-       CYCLE
-    ELSE
-       EXIT
-    ENDIF
-  ENDDO
-  DO
-    IF(1.0D+00<temp)then
-       temp=temp-1.0D+00
-       CYCLE
+  integer              ::  i,j,k,l,h,err_apertura
+  integer,parameter    ::  GA_POPSIZE = 2**12
+  integer,intent(in)   ::  n
+  real,intent(out)     ::  a(0:n-1),ea(0:n-1)
+  real                 ::  setparam(GA_POPSIZE,0:n-1),fit(GA_POPSIZE)
+  character(100)       ::  line
+  character(100),intent(in)::funk
+  real,allocatable     ::  x(:),y(:)
+  real,parameter       ::  mutationP0 = 0.25
+  real                 ::  mutationP ! 10%
+  real                 ::  renorm = 0.0, suma = 0.0,rrr
+  real,parameter       ::  tol = 1.0
+  real,parameter       ::  max_range = 100.0
+  integer              ::  dimen
+  fit = 99999999.99
+  open(unit=123,file='isotermaN.dat',iostat=err_apertura)
+  if(err_apertura/=0)stop '[error] open file'
+  l=0
+  dofit0: do
+   read(123,'(A)',iostat=err_apertura) line
+   if(err_apertura/=0) exit dofit0
+   l=l+1
+  end do dofit0
+  allocate(x(l),y(l))
+  rewind(123)
+  dofit1: do i=1,l
+   read(123,'(A)',iostat=err_apertura) line
+   if(err_apertura/=0) exit dofit1
+   read(line,*) x(i),y(i)
+   write(6,*) x(i),y(i)
+  end do dofit1
+  close(123)
+  dimen=l
+  h = 0
+  a  = 0.0
+  ea = 0.0
+  init_set: do k=1,GA_POPSIZE
+   do j=0,n-1
+    if(j==0) setparam(k,j) = max_range*randreal()
+    if(j>=1) setparam(k,j) = randreal()
+    if(j==3) setparam(k,j) = max_range*randreal()
+   end do
+  end do init_set
+  mix: do
+   mutationP=mutationP0
+   i = randint(1,GA_POPSIZE)
+   j = randint(1,GA_POPSIZE)
+   do while (i==j)
+    j = randint(1,GA_POPSIZE)
+   end do
+   do k=0,n-1
+    a(k) = setparam(i,k)
+   end do
+   s1 = cost(a,x,y,n,dimen,funk)
+   do k=0,n-1
+    a(k) = setparam(j,k)
+    ea(k)= 0.0
+   end do
+   s2 = cost(a,x,y,n,dimen,funk)
+   fit(i)=s1
+   fit(j)=s2
+   if (abs(s1 - s2) <= 0.001 .or. abs(s1)<=tol .or. abs(s2)<=tol ) then
+      h = h + 1
+      if ( h >= 100 ) then
+       exit mix
+      end if
+   end if
+   renorm = s1*s2/(s1+s2)
+   s1=renorm/s1
+   s2=renorm/s2
+   suma = 1.0/(s1+s2+mutationP)
+   s1=s1*suma
+   s2=s2*suma
+   mutationP=mutationP*suma
+   rrr = randreal()
+   if(rrr<=s1)then
+     do l=0,n-1 ! 2 <- 1
+      setparam(j,l) = setparam(i,l)
+     end do
+   else if ( rrr > s1 .and. rrr<= s2 + s1 ) then
+     do l=0,n-1 ! 1 <- 2
+      setparam(i,l) = setparam(j,l)
+     end do
+   else
+    k = randint(0,n-1) ! k-esima componente
+    if(s1 <= s2) then  ! coste de i > coste de j
+     forall (l=0:n-1)
+      setparam(i,l) = setparam(j,l)
+     end forall
+     if(k==0)setparam(i,k) = max_range*randreal()
+     if(k>=1)setparam(i,k) = randreal()
+     if(k==3)setparam(i,k) = max_range*randreal()
     else
-       EXIT
-    ENDIF
-  ENDDO
-  seed=int(dble(i4_huge)*temp)
-  if(seed==0)       seed = 1
-  if(seed==i4_huge) seed = seed-1
-  RETURN
- END subroutine get_seed
-!
- REAL function iast_rand(iseed,imode)
-!  imode = 1 => random number between 0 and 1
-!        = 2 => random number between -1 and 1
-  implicit none
-  integer  :: iseed
-  integer  :: imode
-!  Local variables
-  integer       :: i
-  integer, save :: ia1 = 625
-  integer, save :: ia2 = 1741
-  integer, save :: ia3 = 1541
-  integer, save :: ic1 = 6571
-  integer, save :: ic2 = 2731
-  integer, save :: ic3 = 2957
-  integer, save :: ix1 
-  integer, save :: ix2 
-  integer, save :: ix3
-  integer       :: j
-  integer, save :: m1  = 31104
-  integer, save :: m2  = 12960
-  integer, save :: m3  = 14000
-  real          :: rm1
-  real          :: rm2
-  real,    save :: rr(97)
-!
-  rm1 = 1.0/m1
-  rm2 = 1.0/m2
-  if (iseed.lt.0) then
-    ix1 = mod(ic1 - iseed,m1)
-    ix1 = mod(ia1*ix1 + ic1,m1)
-    ix2 = mod(ix1,m2)
-    ix1 = mod(ia1*ix1 + ic1,m1)
-    ix3 = mod(ix1,m3)
-    do i = 1,97
-      ix1 = mod(ia1*ix1 + ic1,m1)
-      ix2 = mod(ia2*ix2 + ic2,m2)
-      rr(i) = (float(ix1) + float(ix2)*rm2)*rm1
-    enddo
-    iseed = abs(iseed)
-  endif
-  ix3 = mod(ia3*ix3 + ic3,m3)
-  j = 1 + (97*ix3)/m3
-  if (j.gt.97.or.j.lt.1) then
-    WRITE(6,*)'array bounds exceeded in GULP_random'
-    STOP 'iast_random'
-  endif
-  if (imode.eq.1) then
-    iast_rand = rr(j)
-  else
-    iast_rand = 2.0*rr(j) - 1.0
-  endif
-  ix1 = mod(ia1*ix1 + ic1,m1)
-  ix2 = mod(ia2*ix2 + ic2,m2)
-  rr(j) = (float(ix1) + float(ix2)*rm2)*rm1
+     forall (l=0:n-1)
+      setparam(j,l) = setparam(i,l)
+     end forall
+     if(k==0)setparam(j,k) = max_range*randreal()
+     if(k>=1)setparam(j,k) = randreal()
+     if(k==3)setparam(j,k) = max_range*randreal()
+    end if
+   end if
+  end do mix
+  i = minloc(fit, dim=1)
+  write(6,*)'Citizen Elitist:',i,'Fitness:',fit(i)
+  !call sort_by_cost(q,n,setparam,fit,i)
+  write(6,*)'Parameters:',(setparam(i,k),k=0,n-1), &
+  'Deviations:',(sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)]) &
+  / real(GA_POPSIZE-1) ),k=0,n-1)
+  do k=0,n-1
+   a(k) = setparam(i,k)
+   ea(k)= sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)])/real(GA_POPSIZE-1) )
+  end do
   return
-  end function iast_rand
-END PROGRAM
+ end subroutine fitgen
+! ...
+! subroutine sort_by_cost(q,n,setparam,fit,k)
+! implicit none
+! integer,intent(in) :: q,n
+! integer            :: i
+! integer,intent(out):: k
+! real               :: fit(q)
+! real,intent(in)    :: setparam(q,0:n-1)
+! real               :: current_fit = 9999999.9
+ ! ...
+! do i=1,size(fit)
+!  if(fit(i)<=current_fit)then
+!   current_fit=fit(i)
+!   k=i
+!  end if
+! end do
+! end subroutine sort_by_cost
+! ...
+ real function cost(a,x,y,n,l,function_)
+! calcula el coste
+  implicit none
+  integer,intent(in)        ::  n,l
+  integer                   ::  i
+  real,intent(in)           ::  a(0:n-1),x(l),y(l)
+  real                      ::  funk(l)
+  character(100),intent(in) ::  function_
+  cost = 0.0
+  select case (function_)
+   case("freundlich")!n = a*x**b 
+    do i=1,l
+     funk(i)=a(0)*x(i)**a(1)
+    end do
+   case ("langmuir") !n = nmax*alfa*P/(1+alfa*P)
+    do i=1,l
+     funk(i)=a(0)*a(1)*x(i)/(1+a(1)*x(i))
+    end do
+   case ("toth")     !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)
+    do i=1,l
+     funk(i)=(a(0)*a(1)*x(i))/((1.0+(a(1)*x(i))**a(2))**(1/a(2)))
+    end do
+   case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c)
+    do i=1,l
+     funk(i)=a(0)*x(i)/(1.0+(a(0)*x(i)/(a(1)*(1.0+a(3)*x(i)))**a(2)))**(1/a(2))
+    end do 
+  end select
+  cost = sum([(abs(y(i)-funk(i))**2,i=1,l)])
+  return
+ end function cost
+! 
+end program iast_desarrollo_GA

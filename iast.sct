@@ -1,0 +1,7 @@
+#!/bin/bash
+make all
+./iast < input
+gnuplot png.gp
+display iast.png
+make clean
+exit 0
