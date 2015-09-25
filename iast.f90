@@ -207,7 +207,7 @@ program iast_desarrollo_GA
                   funcion1(i) = coef1(0)*coef1(1)*puntos1(i)/(1+coef1(1)*puntos1(i))
                   funcion2(i) = coef2(0)*coef2(1)*puntos2(i)/(1+coef2(1)*puntos2(i))
              END DO
-        CASE ("langmuiranalitico")
+        CASE ("langmuiranalitico") 
              !a1 y a2 son el extremo inferior de la integral definida para ambas funciones
              a1 = coef1(0)*(inferior-(log(1+coef1(1)*inferior)/coef1(1)))
              a2 = coef2(0)*(inferior-(log(1+coef2(1)*inferior)/coef2(1)))
@@ -317,7 +317,7 @@ program iast_desarrollo_GA
 ! un ajuste optimo minimizando el coste a una lectura de la isoterma
   implicit none
   integer              ::  i,j,k,l,h,err_apertura
-  integer,parameter    ::  GA_POPSIZE = 2**12
+  integer,parameter    ::  GA_POPSIZE = 2**15
   integer,intent(in)   ::  n
   real,intent(out)     ::  a(0:n-1),ea(0:n-1)
   real                 ::  setparam(GA_POPSIZE,0:n-1),fit(GA_POPSIZE)
@@ -377,9 +377,9 @@ program iast_desarrollo_GA
    s2 = cost(a,x,y,n,dimen,funk)
    fit(i)=s1
    fit(j)=s2
-   if (abs(s1 - s2) <= 0.001 .or. abs(s1)<=tol .or. abs(s2)<=tol ) then
+   if (abs(s1 - s2) <= 0.00001 .or. abs(s1)<=tol .or. abs(s2)<=tol ) then
       h = h + 1
-      if ( h >= 100 ) then
+      if ( h >= 1000 ) then
        exit mix
       end if
    end if
@@ -458,25 +458,35 @@ program iast_desarrollo_GA
   character(100),intent(in) ::  function_
   cost = 0.0
   select case (function_)
-   case("freundlich")!n = a*x**b 
-    do i=1,l
+   case("freundlich")!n = a*x**b #function 
+    forall (i=1:l)
      funk(i)=a(0)*x(i)**a(1)
-    end do
-   case ("langmuir") !n = nmax*alfa*P/(1+alfa*P)
-    do i=1,l
+    end forall
+   case ("langmuir") !n = nmax*alfa*P/(1+alfa*P) #function
+    forall (i=1:l)
      funk(i)=a(0)*a(1)*x(i)/(1+a(1)*x(i))
-    end do
-   case ("toth")     !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)
-    do i=1,l
+    end forall
+   case ("toth")     !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c) #function
+    forall (i=1:l)
      funk(i)=(a(0)*a(1)*x(i))/((1.0+(a(1)*x(i))**a(2))**(1/a(2)))
-    end do
-   case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c)
-    do i=1,l
-     funk(i)=a(0)*x(i)/(1.0+(a(0)*x(i)/(a(1)*(1.0+a(3)*x(i)))**a(2)))**(1/a(2))
-    end do 
+    end forall
+   case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #function
+    forall (i=1:l)
+     funk(i)=a(0)*x(i)/(1.0+(a(0)*x(i)/(a(1)*(1.0+a(3)*x(i))))**a(2))**(1.0/a(2))
+    end forall
   end select
   cost = sum([(abs(y(i)-funk(i))**2,i=1,l)])
   return
  end function cost
+!
+ !real function langmuir(a,x,l,n)
+ ! implicit none
+ ! integer, intent(in)  :: l,n
+ ! real, intent(in)     :: a(0,n-1),x(l)
+ ! !forall (i=1:l)
+ ! langmuir = a(0)*a(1)*x(i)/(1+a(1)*x(i)
+ ! !end forall
+ ! return
+ !end function langmuir
 ! 
 end program iast_desarrollo_GA
