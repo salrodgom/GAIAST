@@ -1,8 +1,0 @@
-#!/bin/bash
-make all
-./iast < input
-gnuplot png.gp
-display iast.png
-make clean
-rm iso?.dat isotermaN.dat
-exit 0

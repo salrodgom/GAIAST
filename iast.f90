@@ -202,25 +202,25 @@ program iast_desarrollo_GA
           funcion1(i) = coef1(0)*puntos1(i)**(1.0/coef1(1))
           funcion2(i) = coef2(0)*puntos2(i)**(1.0/coef2(1))
          end do
-        CASE ("langmuir")
-             DO i=0,intervalos          
-                  funcion1(i) = coef1(0)*coef1(1)*puntos1(i)/(1+coef1(1)*puntos1(i))
-                  funcion2(i) = coef2(0)*coef2(1)*puntos2(i)/(1+coef2(1)*puntos2(i))
-             END DO
-        CASE ("langmuiranalitico") 
-             !a1 y a2 son el extremo inferior de la integral definida para ambas funciones
-             a1 = coef1(0)*(inferior-(log(1+coef1(1)*inferior)/coef1(1)))
-             a2 = coef2(0)*(inferior-(log(1+coef2(1)*inferior)/coef2(1)))
-             allocate(PI1(1:intervalos),PI2(1:intervalos))
-             do i=1,intervalos-1
-                 ! punto = inferior +i*h
-                  ! la integral de langmuir es : nmax*[p-ln(1+alfa*p)/alfa]
-                  PI1(i)= coef1(0)*(punto-(log(1+coef1(1)*punto)/coef1(1)))-a1
-                  PI2(i)= coef2(0)*(punto-(log(1+coef2(1)*punto)/coef2(1)))-a2
-                  funcion1(i) = coef1(0)*coef1(1)*punto/(1+coef1(1)*punto)
-                  funcion2(i) = coef2(0)*coef2(1)*punto/(1+coef2(1)*punto)
-             end do
-             deallocate(PI1,PI2)
+        case("langmuir")
+         forall (i=0:intervalos)
+          funcion1(i) = coef1(0)*coef1(1)*puntos1(i)/(1+coef1(1)*puntos1(i))
+          funcion2(i) = coef2(0)*coef2(1)*puntos2(i)/(1+coef2(1)*puntos2(i))
+         end forall
+        !CASE ("langmuiranalitico") 
+        !     !a1 y a2 son el extremo inferior de la integral definida para ambas funciones
+        !     a1 = coef1(0)*(inferior-(log(1+coef1(1)*inferior)/coef1(1)))
+        !     a2 = coef2(0)*(inferior-(log(1+coef2(1)*inferior)/coef2(1)))
+        !     allocate(PI1(1:intervalos),PI2(1:intervalos))
+        !     do i=1,intervalos-1
+        !          punto = inferior +i*h1
+        !          ! la integral de langmuir es : nmax*[p-ln(1+alfa*p)/alfa]
+        !          PI1(i)= coef1(0)*(punto-(log(1+coef1(1)*punto)/coef1(1)))-a1
+        !          PI2(i)= coef2(0)*(punto-(log(1+coef2(1)*punto)/coef2(1)))-a2
+        !          funcion1(i) = coef1(0)*coef1(1)*punto/(1+coef1(1)*punto)
+        !          funcion2(i) = coef2(0)*coef2(1)*punto/(1+coef2(1)*punto)
+        !     end do
+        !     deallocate(PI1,PI2)
         CASE ("toth")
              DO i=0,intervalos
                   funcion1(i) = coef1(0)*coef1(1)*puntos1(i)/&
@@ -317,7 +317,7 @@ program iast_desarrollo_GA
 ! un ajuste optimo minimizando el coste a una lectura de la isoterma
   implicit none
   integer              ::  i,j,k,l,h,err_apertura
-  integer,parameter    ::  GA_POPSIZE = 2**15
+  integer,parameter    ::  GA_POPSIZE = 2**20
   integer,intent(in)   ::  n
   real,intent(out)     ::  a(0:n-1),ea(0:n-1)
   real                 ::  setparam(GA_POPSIZE,0:n-1),fit(GA_POPSIZE)
