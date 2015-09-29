@@ -69,8 +69,10 @@ program iast_desarrollo_GA
  implicit none
  real             :: comp,concx1,concx2,concy1,concy2
  real,parameter   :: tol = 0.001
+ real,parameter   :: temperature = 298.0
  real             :: h1,h2,p,presion1,presion2,n,n1,n2
- real             :: inferior,superior,s1,s2,x0
+ real             :: inferior,superior
+ real             :: s1 = 0.0,s2 = 0.0,x0
  integer          :: err_apertura = 0,i,ii,k,l,j,intervalos,npar
  character(100)   :: line,ajuste,test_name
  real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
@@ -122,32 +124,33 @@ program iast_desarrollo_GA
    ii  = 2**14 
   case ("langmuir")
    npar=2
-   ii = 2**15
+   ii = 2**14
   case ("toth")
    npar=3
    ii = 2**18
   case ("jensen")
    npar=4
-   ii = 2**20
+   ii = 2**21
   case ("dubinin_raduschkevich")
-   npar=3
-   ii = 2*20
+   npar=5
+   ii = 2*23
   case ("langmuir_dualsite")
    npar=4
-   ii = 2**18
-  case ("dubinin_astakhov")
-   npar=4
    ii = 2**20
+  case ("dubinin_astakhov")
+   npar=5
+   ii = 2**23
  end select
  allocate(param(2,0:npar-1),eparam(2,0:npar-1))
  allocate(coef1(0:npar-1),coef2(0:npar-1),e_coef1(0:npar-1),e_coef2(0:npar-1))
  do i=1,2
   coef1=0
   coef2=0
-  write (test_name, '( "isoterma", I1, ".dat" )' ) i
-  write (6, '( "Fitting isoterma", I1, ".dat" )' ) i
+  write(test_name, '( "isoterma", I1, ".dat" )' ) i
+  write(6, '( "Fitting isoterma", I1, ".dat" )' ) i
+  write(6,'("Isotherm model: ",A)') ajuste 
   call system ("cp " // test_name // " isotermaN.dat")
-  call fitgen(coef1,e_coef1,npar,ajuste,ii)
+  call fitgen(coef1,e_coef1,npar,ajuste,ii,temperature)
   do j=0,npar-1
    param(i,j)=coef1(j)
    eparam(i,j)=e_coef1(j)
@@ -198,8 +201,8 @@ program iast_desarrollo_GA
  ALLOCATE(funcion1(0:intervalos),funcion2(0:intervalos))
  do i=0,intervalos
   x0 = puntos1(i)
-  funcion1(i) = model(coef1,x0,npar,ajuste)
-  funcion2(i) = model(coef2,x0,npar,ajuste)
+  funcion1(i) = model(coef1,x0,npar,ajuste,temperature)
+  funcion2(i) = model(coef2,x0,npar,ajuste,temperature)
  end do
 ! calculamos el area bajo la curva de ajuste utilizando el metodo de los trapecios
  ALLOCATE (area1(0:intervalos),area2(0:intervalos),PI1(0:intervalos),PI2(0:intervalos))
@@ -276,24 +279,23 @@ program iast_desarrollo_GA
 !   
 !  end do
 !
- subroutine fitgen(a,ea,n,funk,GA_POPSIZE)
+ subroutine fitgen(a,ea,n,funk,GA_POPSIZE,T)
 ! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
 ! un ajuste optimo minimizando el coste a una lectura de la isoterma
   implicit none
-  integer              ::  i,j,k,l,h,err_apertura
-  integer,intent(in)   ::  GA_POPSIZE
-  integer,intent(in)   ::  n
-  real,intent(out)     ::  a(0:n-1),ea(0:n-1)
-  real                 ::  setparam(GA_POPSIZE,0:n-1),fit(GA_POPSIZE)
-  character(100)       ::  line
-  character(100),intent(in)::funk
-  real,allocatable     ::  x(:),y(:)
-  real,parameter       ::  mutationP0 = 0.25
-  real                 ::  mutationP ! 10%
-  real                 ::  renorm = 0.0, suma = 0.0,rrr
-  real,parameter       ::  tol = 1.0
-  real,parameter       ::  max_range = 100.0
-  integer              ::  dimen
+  integer                  ::  i,j,k,l,h,err_apertura,dimen
+  integer,intent(in)       ::  GA_POPSIZE,n
+  real,intent(in)          ::  T
+  real,intent(out)         ::  a(0:n-1),ea(0:n-1)
+  real                     ::  setparam(GA_POPSIZE,0:n-1),fit(GA_POPSIZE)
+  real                     ::  f1,f2
+  character(100)           ::  line
+  character(100),intent(in)::  funk
+  real,allocatable         ::  x(:),y(:)
+  real,parameter           ::  mutationP0 = 0.25
+  real,parameter           ::  tol = 1.0
+  real,parameter           ::  max_range = 100.0
+  real                     ::  mutationP, renorm = 0.0, suma = 0.0,rrr
   fit = 99999999.99
   open(unit=123,file='isotermaN.dat',iostat=err_apertura)
   if(err_apertura/=0)stop '[error] open file'
@@ -318,10 +320,11 @@ program iast_desarrollo_GA
   ea = 0.0
   init_set: do k=1,GA_POPSIZE
    do j=0,n-1
-    !setparam(k,j) = max_range*randreal()
-    if(j==0) setparam(k,j) = max_range*randreal()
-    if(j>=1) setparam(k,j) = randreal()
-    if(j==3) setparam(k,j) = max_range*randreal()
+    if(j==0)setparam(k,j) = max_range*randreal()
+    if(j>=1)setparam(k,j) = randreal()
+    if(j==3)setparam(k,j) = max_range*randreal()
+    if(j==4)setparam(k,j) = (minval(x)/2.0 + 2*maxval(x)*randreal())
+    if(j==5)setparam(k,j) = max_range*randreal()
    end do
   end do init_set
   mix: do
@@ -334,54 +337,56 @@ program iast_desarrollo_GA
    do k=0,n-1
     a(k) = setparam(i,k)
    end do
-   s1 = cost(a,x,y,n,dimen,funk)
+   f1 = cost(a,x,y,n,dimen,funk,T)
    do k=0,n-1
     a(k) = setparam(j,k)
     ea(k)= 0.0
    end do
-   s2 = cost(a,x,y,n,dimen,funk)
-   fit(i)=s1
-   fit(j)=s2
-   if (abs(s1 - s2) <= 0.00001 .or. abs(s1)<=tol .or. abs(s2)<=tol ) then
+   f2 = cost(a,x,y,n,dimen,funk,T)
+   fit(i)=f1
+   fit(j)=f2
+   if (abs(f1 - f2) <= 0.000001 ) then
       h = h + 1
       if ( h >= 1000 ) then
        exit mix
       end if
    end if
-   renorm = s1*s2/(s1+s2)
-   s1=renorm/s1
-   s2=renorm/s2
-   suma = 1.0/(s1+s2+mutationP)
-   s1=s1*suma
-   s2=s2*suma
+   renorm = f1*f2/(f1+f2)
+   f1=renorm/f1
+   f2=renorm/f2
+   suma = 1.0/(f1+f2+mutationP)
+   f1=f1*suma
+   f2=f2*suma
    mutationP=mutationP*suma
    rrr = randreal()
-   if(rrr<=s1)then
+   if(rrr<=f1)then
      do l=0,n-1 ! 2 <- 1
       setparam(j,l) = setparam(i,l)
      end do
-   else if ( rrr > s1 .and. rrr<= s2 + s1 ) then
+   else if ( rrr > f1 .and. rrr<= f2 + f1 ) then
      do l=0,n-1 ! 1 <- 2
       setparam(i,l) = setparam(j,l)
      end do
    else
     k = randint(0,n-1) ! k-esima componente
-    if(s1 <= s2) then  ! coste de i > coste de j
+    if(f1 <= f2) then  ! coste de i > coste de j
      forall (l=0:n-1)
       setparam(i,l) = setparam(j,l)
      end forall
-     !setparam(i,k) = max_range*randreal()
      if(k==0)setparam(i,k) = max_range*randreal()
      if(k>=1)setparam(i,k) = randreal()
      if(k==3)setparam(i,k) = max_range*randreal()
+     if(k==4)setparam(i,k) = (minval(x)/2.0 + 2*maxval(x)*randreal())
+     if(k==5)setparam(i,k) = max_range*randreal()
     else
      forall (l=0:n-1)
       setparam(j,l) = setparam(i,l)
      end forall
-     !setparam(i,k) = max_range*randreal()
      if(k==0)setparam(j,k) = max_range*randreal()
      if(k>=1)setparam(j,k) = randreal()
      if(k==3)setparam(j,k) = max_range*randreal()
+     if(k==4)setparam(j,k) = (minval(x)/2.0 + 2*maxval(x)*randreal())
+     if(k==5)setparam(j,k) = max_range*randreal()
     end if
    end if
   end do mix
@@ -415,10 +420,11 @@ program iast_desarrollo_GA
 ! end do
 ! end subroutine sort_by_cost
 ! ...
- real function cost(a,x,y,n,l,function_)
+ real function cost(a,x,y,n,l,function_,T)
 ! calcula el coste
   implicit none
   integer,intent(in)        ::  n,l
+  real,intent(in)           ::  T
   integer                   ::  i = 0
   real,intent(in)           ::  a(0:n-1),x(l),y(l)
   real                      ::  funk(l)
@@ -428,7 +434,8 @@ program iast_desarrollo_GA
   funk = 0.0
   do i=1,l
    x0 = x(i)
-   funk(i) = model(a,x0,n,function_)
+   funk(i) = model(a,x0,n,function_,T)
+   if (funk(i)<0.0) funk(i) = 0.0
   end do
   cost = sum([(abs(y(i)-funk(i))**2,i=1,l)])
   return
@@ -440,7 +447,7 @@ program iast_desarrollo_GA
   real,intent(in)           :: a(0:n-1)
   real,intent(in)           :: x
   character(100),intent(in) :: function_
-  real,intent(in),optional  :: T
+  real,intent(in)           :: T
   real,parameter            :: R = 0.008314472 ! kJ / mol / K
   select case (function_)
    case("freundlich")!n = a*x**b #function #model
@@ -452,11 +459,11 @@ program iast_desarrollo_GA
    case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #function #model
     model = a(0)*x/(1+(a(0)*x/(a(1)*(1+a(3)*x))**a(2)))**(1/a(2))
    case ("dubinin_raduschkevich") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
-    model = a(0)*exp(-((R*T/a(1))*log(a(2)/x) )**2)
+    model = a(0)*exp(-((R*T/a(3))*log(a(4)/x) )**2)
    case ("langmuir_dualsite")      ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P) #model
-    model = a(0)*a(1)*x/(1+a(1)*x) + a(2)*a(3)*x/(1+a(3)*x)
+    model = a(0)*a(1)*x/(1+a(1)*x) + a(3)*a(2)*x/(1+a(2)*x)
    case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
-    model = a(0)*exp(-((R*T/a(1))*log(a(2)/x) )**a(3))
+    model = a(0)*exp(-((R*T/a(3))*log(a(4)/x) )**a(2))
   end select
   return
  end function model
