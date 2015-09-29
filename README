@@ -1,18 +1,73 @@
-# gaiast
-=======
-This is the IAST code. Updated: Tue 29 Sep, 2015, 14:48:35
+Genetic Algorithm IAST
+======================
+This is the IAST code.
+Updated: Tue 29 Sep, 2015, 14:48:35
+First version:   Rafael Aguilar, Rocio Bueno
+Updated version: Salvador Rodríguez Gómez
 
-Input:
-======
 Input files:
-input, isoterma1.dat and isoterma2.dat
+============
+"input", "isoterma1.dat" and "isoterma2.dat"
 
+Fitting:
+========
+ Genetic Algorithm by the easy way. The hard way is work in progress (branch "genetic")
+ Improvement: you can increase the velocity of the fit by decreasing the "GA_POPSIZE" value. It's a BIG number
+
+$ grep -A20 'GA_POPSIZE ini' *.f90
+ select case (ajuste)
+  case("freundlich")
+   npar= 2
+   GA_POPSIZE  = 2**14 
+  case ("langmuir")
+   npar=2
+   GA_POPSIZE = 2**14
+  case ("toth")
+   npar=3
+   GA_POPSIZE = 2**18
+....
+ 
+ Models:
+ -------
+$ grep '#model' *.f90
+ case("freundlich") !n = a*x**b                                    #model
+ case("langmuir")   !n = nmax*alfa*P/(1+alfa*P)                    #model
+ case("toth")       !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)     #model
+ case("jensen")     !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #model
+ case("dubinin_raduschkevich")! N=Nm*exp(-(RT/Eo ln(Po/P))^2)      #model
+ case("langmuir_dualsite")    ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P)  #model
+ case("dubinin_astakhov")     ! N=Nm*exp(-(RT/Eo ln(Po/P))^d)      #model
+
+The "dubinin_raduschkevich" and "dubinin_astakhov" models use a thermal parameter.
+The default value of the temperature is 298.0 K. You can change this value in the follow line: 
+$ grep 'temperature' *.f90
+ real,parameter   :: temperature = 298.0
+
+Multicomponent (>2):
+====================
+ Work in progres (branch "multicomponent").
+
+Installation, Configuration, Usage:
+===================================
+
+$ make install
+$ make execute
+$ make clean
+
+Or just:
+
+$ make all
+
+Example 1:
 $ cat input
-jensen        <- isotherm model: langmuir, toth, 
-1000          <- 
-0.5           <- Molar fraction of compound 1 in reservoir
-0.5           <- Molar fraction of compound 2 in reservoir
-The total molar fraction in the mixture has to be equal to 1
+jensen .true. #<- Isotherm model: langmuir, toth, freundlich, jensen, dubinin_raduschkevich, langmuir_dualsite, dubinin_astakhov.
+              # El segundo es un valor logico. Si es .true. el programa realiza el ajuste.
+              # En caso contrario no realizará el ajuste y pedirá los parametros en las ultimas lineas en el mismo orden que la fración molar (ejemplo de abajo)
+1000          #<- Number of output pressures
+0.5           #<- Molar fraction of compound 1 in reservoir
+0.5           #<- Molar fraction of compound 2 in reservoir
+
+# The total molar fraction in the mixture has to be equal to 1
 
 $ cat isoterma1.dat
 0.01    0.0049446691   <- Pressure and  Loading (arbitrary units)
@@ -25,32 +80,14 @@ $ cat isoterma1.dat
 3       3.4799668446
 6       3.8092907411
 10      3.9385998255
+....
 
-Fitting:
-========
- Genetic Algorithm by easy way. The hard way is work in progress (branch "genetic").
+Example 2: En este ejemplo generamos la curva de la mezcla para un mismo set de parametros calculado anteriormente. Esto es conveniente cuando el modelo es complejo.
+$ cat input
+langmuir_dualsite .false.
+5000
+0.10
+0.90
+4.35646772      0.673587024       6.97058439E-03  0.323694944
+0.793254375     3.05414200E-04    0.103873610     3.46274376
 
-Multicomponent (>2):
-====================
- Work in progres (branch "multicomponent").
-
-Models:
-=======
-$ grep '#model' *.f90
- case("freundlich") !n = a*x**b                                    #model
- case("langmuir")   !n = nmax*alfa*P/(1+alfa*P)                    #model
- case("toth")       !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)     #model
- case("jensen")     !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #model
- case("dubinin_raduschkevich")! N=Nm*exp(-(RT/Eo ln(Po/P))^2)      #model
- case("langmuir_dualsite")    ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P)  #model
- case("dubinin_astakhov")     ! N=Nm*exp(-(RT/Eo ln(Po/P))^d)      #model
-
-Installation, Configuration, Usage:
-===================================
-
-$ make install
-$ make execute
-$ make clean
-
-Or just:
-$ make all

@@ -74,17 +74,20 @@ program iast_desarrollo_GA
  real             :: inferior,superior
  real             :: s1 = 0.0,s2 = 0.0,x0
  integer          :: err_apertura = 0,i,ii,k,l,j,intervalos,npar
+ integer          :: GA_POPSIZE =  1
+ integer,parameter:: ncomponents = 2
  character(100)   :: line,ajuste,test_name
  real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
  real,allocatable :: e_coef1(:),e_coef2(:),param(:,:),eparam(:,:)
  real,allocatable :: puntos1(:),puntos2(:),funcion1(:),funcion2(:)
+ logical          :: flag = .true.
  
  call init_random_seed()
 
 !========================================================================
 ! PARAMETROS
 !========================================================================
- read(5,*)ajuste
+ read(5,*)ajuste,flag
  read(5,*)intervalos
  !read(5,*)tol
  read(5,*)concy1
@@ -95,7 +98,7 @@ program iast_desarrollo_GA
 ! concy1 = 0.5       !concentracion fase gas componente1
 ! concy2 = 0.5       !concentracion fase gas componente2
 !========================================================================
- nisothermpure: do ii=1,2
+ nisothermpure: do ii=1,ncomponents
   write (test_name, '( "isoterma", I1, ".dat" )' ) ii
   call system ("cp " // test_name // " isotermaN.dat")
   open(unit=100,file="isotermaN.dat",status='old',iostat=err_apertura)
@@ -118,44 +121,51 @@ program iast_desarrollo_GA
   close(100)
  end do nisothermpure
 !========================================================================
+! GA_POPSIZE initialisation
  select case (ajuste)
   case("freundlich")
    npar= 2
-   ii  = 2**14 
+   GA_POPSIZE  = 2**14 
   case ("langmuir")
    npar=2
-   ii = 2**14
+   GA_POPSIZE = 2**14
   case ("toth")
    npar=3
-   ii = 2**18
+   GA_POPSIZE = 2**18
   case ("jensen")
    npar=4
-   ii = 2**21
+   GA_POPSIZE = 2**21
   case ("dubinin_raduschkevich")
    npar=5
-   ii = 2*23
+   GA_POPSIZE = 2*23
   case ("langmuir_dualsite")
    npar=4
-   ii = 2**20
+   GA_POPSIZE = 2**20
   case ("dubinin_astakhov")
    npar=5
-   ii = 2**23
+   GA_POPSIZE = 2**23
  end select
- allocate(param(2,0:npar-1),eparam(2,0:npar-1))
+ allocate(param(ncomponents,0:npar-1),eparam(ncomponents,0:npar-1))
  allocate(coef1(0:npar-1),coef2(0:npar-1),e_coef1(0:npar-1),e_coef2(0:npar-1))
- do i=1,2
-  coef1=0
-  coef2=0
-  write(test_name, '( "isoterma", I1, ".dat" )' ) i
-  write(6, '( "Fitting isoterma", I1, ".dat" )' ) i
-  write(6,'("Isotherm model: ",A)') ajuste 
-  call system ("cp " // test_name // " isotermaN.dat")
-  call fitgen(coef1,e_coef1,npar,ajuste,ii,temperature)
-  do j=0,npar-1
-   param(i,j)=coef1(j)
-   eparam(i,j)=e_coef1(j)
+ if(flag)then
+  do i=1,ncomponents
+   coef1=0
+   coef2=0
+   write(test_name, '( "isoterma", I1, ".dat" )' ) i
+   write(6, '( "Fitting isoterma", I1, ".dat" )' ) i
+   write(6,'("Isotherm model: ",A)') ajuste 
+   call system ("cp " // test_name // " isotermaN.dat")
+   call fitgen(coef1,e_coef1,npar,ajuste,GA_POPSIZE,temperature)
+   do j=0,npar-1
+    param(i,j)=coef1(j)
+    eparam(i,j)=e_coef1(j)
+   end do
   end do
- end do
+ else
+  readparameter: do ii=1,ncomponents
+   read(5,*)(param(ii,j),j=0,npar-1)
+  end do readparameter
+ end if
  do j=0,npar-1
   coef1(j)=param(1,j)
   coef2(j)=param(2,j)
