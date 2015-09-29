@@ -37,13 +37,13 @@ Multicomponent (>2):
 Models:
 =======
 $ grep '#model' *.f90
-   case("freundlich")              !n = a*x**b                                    #model
-   case("langmuir")               !n = nmax*alfa*P/(1+alfa*P)                    #model
-   case("toth")                   !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)     #model
-   case("jensen")                 !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #model
-   case("dubinin_raduschkevich")  ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)                #model
-   case("langmuir_dualsite")      ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P)            #model
-   case("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d)                #model
+ case("freundlich") !n = a*x**b                                    #model
+ case("langmuir")   !n = nmax*alfa*P/(1+alfa*P)                    #model
+ case("toth")       !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)     #model
+ case("jensen")     !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #model
+ case("dubinin_raduschkevich")! N=Nm*exp(-(RT/Eo ln(Po/P))^2)      #model
+ case("langmuir_dualsite")    ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P)  #model
+ case("dubinin_astakhov")     ! N=Nm*exp(-(RT/Eo ln(Po/P))^d)      #model
 
 Installation, Configuration, Usage:
 ===================================
