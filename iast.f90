@@ -72,9 +72,11 @@ program iast_desarrollo_GA
 !========================================================================
 ! VARIABLES
 !========================================================================
- real             :: comp,tol,concx1,concx2,concy1,concy2
+ real             :: comp,concx1,concx2,concy1,concy2
+ real,parameter   :: tol = 0.001
  real             :: h1,h2,p,presion1,presion2,n,n1,n2
- real             :: a1,a2,inferior,superior,punto,s1,s2
+! real             :: a1,a2
+ real             :: inferior,superior,s1,s2,x0
  integer          :: err_apertura = 0,i,ii,k,l,j,intervalos,npar
  character(100)   :: line,ajuste,test_name
  real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
@@ -88,7 +90,7 @@ program iast_desarrollo_GA
 !========================================================================
  read(5,*)ajuste
  read(5,*)intervalos
- read(5,*)tol
+ !read(5,*)tol
  read(5,*)concy1
  read(5,*)concy2
 ! ajuste = "toth"    !seleccion del ajuste 
@@ -130,13 +132,26 @@ program iast_desarrollo_GA
 !!!!mantener el archivo ajustelangmuir en la misma carpeta donde se corra el programa
  select case (ajuste)
   case("freundlich")!n = a*x**b 
-   npar=2
+   npar= 2
+   ii  = 2**14 
   case ("langmuir") !n = nmax*alfa*P/(1+alfa*P)
    npar=2
+   ii = 2**15
   case ("toth")
    npar=3
+   ii = 2**18
   case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c)
    npar=4
+   ii = 2**20
+  case ("dubinin_raduschkevich")
+   npar=3 ! temperature a(5)
+   ii = 2*20
+  case ("langmuir_dualsite")
+   npar=4
+   ii = 2**18
+  case ("dubinin_astakhov")
+   npar=4 ! temperature a(5)
+   ii = 2**20
  end select
  allocate(param(2,0:npar-1),eparam(2,0:npar-1))
  allocate(coef1(0:npar-1),coef2(0:npar-1),e_coef1(0:npar-1),e_coef2(0:npar-1))
@@ -146,7 +161,7 @@ program iast_desarrollo_GA
   write (test_name, '( "isoterma", I1, ".dat" )' ) i
   write (6, '( "Fitting isoterma", I1, ".dat" )' ) i
   call system ("cp " // test_name // " isotermaN.dat")
-  call fitgen(coef1,e_coef1,npar,ajuste)
+  call fitgen(coef1,e_coef1,npar,ajuste,ii)
   do j=0,npar-1
    param(i,j)=coef1(j)
    eparam(i,j)=e_coef1(j)
@@ -196,57 +211,21 @@ program iast_desarrollo_GA
      puntos2(i)=10**(inferior+i*h2)
   END DO
  ALLOCATE(funcion1(0:intervalos),funcion2(0:intervalos))
- SELECT CASE (ajuste)
-        case('freundlich')
-         do i=0,intervalos
-          funcion1(i) = coef1(0)*puntos1(i)**(1.0/coef1(1))
-          funcion2(i) = coef2(0)*puntos2(i)**(1.0/coef2(1))
-         end do
-        case("langmuir")
-         forall (i=0:intervalos)
-          funcion1(i) = coef1(0)*coef1(1)*puntos1(i)/(1+coef1(1)*puntos1(i))
-          funcion2(i) = coef2(0)*coef2(1)*puntos2(i)/(1+coef2(1)*puntos2(i))
-         end forall
-        !CASE ("langmuiranalitico") 
-        !     !a1 y a2 son el extremo inferior de la integral definida para ambas funciones
-        !     a1 = coef1(0)*(inferior-(log(1+coef1(1)*inferior)/coef1(1)))
-        !     a2 = coef2(0)*(inferior-(log(1+coef2(1)*inferior)/coef2(1)))
-        !     allocate(PI1(1:intervalos),PI2(1:intervalos))
-        !     do i=1,intervalos-1
-        !          punto = inferior +i*h1
-        !          ! la integral de langmuir es : nmax*[p-ln(1+alfa*p)/alfa]
-        !          PI1(i)= coef1(0)*(punto-(log(1+coef1(1)*punto)/coef1(1)))-a1
-        !          PI2(i)= coef2(0)*(punto-(log(1+coef2(1)*punto)/coef2(1)))-a2
-        !          funcion1(i) = coef1(0)*coef1(1)*punto/(1+coef1(1)*punto)
-        !          funcion2(i) = coef2(0)*coef2(1)*punto/(1+coef2(1)*punto)
-        !     end do
-        !     deallocate(PI1,PI2)
-        CASE ("toth")
-             DO i=0,intervalos
-                  funcion1(i) = coef1(0)*coef1(1)*puntos1(i)/&
-                                ((1+(coef1(1)*puntos1(i))**coef1(2))**(1/coef1(2)))
-                  funcion2(i) = coef2(0)*coef2(1)*puntos2(i)/&
-                                ((1+(coef2(1)*puntos2(i))**coef2(2))**(1/coef2(2)))
-             END DO
-        CASE ("jensen")
-             DO i=0,intervalos
-                  funcion1(i) = coef1(0)*puntos1(i)/(1+(coef1(0)*puntos1(i)/&
-                               (coef1(1)*(1+coef1(3)*puntos1(i))))**coef1(2))**(1/coef1(2))
-                  funcion2(i) = coef2(0)*puntos2(i)/(1+(coef2(0)*puntos2(i)/&
-                               (coef2(1)*(1+coef2(3)*puntos2(i))))**coef2(2))**(1/coef2(2))
-             END DO
- END SELECT
- 
+ do i=0,intervalos
+  x0 = puntos1(i)
+  funcion1(i) = model(coef1,x0,npar,ajuste)
+  funcion2(i) = model(coef2,x0,npar,ajuste)
+ end do
 ! calculamos el area bajo la curva de ajuste utilizando el metodo de los trapecios
  ALLOCATE (area1(0:intervalos),area2(0:intervalos),PI1(0:intervalos),PI2(0:intervalos))
  DO i=0,intervalos-1
-      area1(i)= real((funcion1(i)+funcion1(i+1))*h1/2)!/puntos1(i)
-      area2(i)= real((funcion2(i)+funcion2(i+1))*h2/2)!/puntos2(i)
-      s1 = s1 + area1(i)
-      s2 = s2 + area2(i)
-      PI1(i+1)= s1
-      PI2(i+1)= s2
-      !
+  area1(i)= real((funcion1(i)+funcion1(i+1))*h1/2)!/puntos1(i)
+  area2(i)= real((funcion2(i)+funcion2(i+1))*h2/2)!/puntos2(i)
+  s1 = s1 + area1(i)
+  s2 = s2 + area2(i)
+  PI1(i+1)= s1
+  PI2(i+1)= s2
+  !
  END DO
  
  OPEN(221,file='iso1.dat')
@@ -312,12 +291,12 @@ program iast_desarrollo_GA
 !   
 !  end do
 !
- subroutine fitgen(a,ea,n,funk)
+ subroutine fitgen(a,ea,n,funk,GA_POPSIZE)
 ! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
 ! un ajuste optimo minimizando el coste a una lectura de la isoterma
   implicit none
   integer              ::  i,j,k,l,h,err_apertura
-  integer,parameter    ::  GA_POPSIZE = 2**20
+  integer,intent(in)   ::  GA_POPSIZE
   integer,intent(in)   ::  n
   real,intent(out)     ::  a(0:n-1),ea(0:n-1)
   real                 ::  setparam(GA_POPSIZE,0:n-1),fit(GA_POPSIZE)
@@ -354,6 +333,7 @@ program iast_desarrollo_GA
   ea = 0.0
   init_set: do k=1,GA_POPSIZE
    do j=0,n-1
+    !setparam(k,j) = max_range*randreal()
     if(j==0) setparam(k,j) = max_range*randreal()
     if(j>=1) setparam(k,j) = randreal()
     if(j==3) setparam(k,j) = max_range*randreal()
@@ -405,6 +385,7 @@ program iast_desarrollo_GA
      forall (l=0:n-1)
       setparam(i,l) = setparam(j,l)
      end forall
+     !setparam(i,k) = max_range*randreal()
      if(k==0)setparam(i,k) = max_range*randreal()
      if(k>=1)setparam(i,k) = randreal()
      if(k==3)setparam(i,k) = max_range*randreal()
@@ -412,6 +393,7 @@ program iast_desarrollo_GA
      forall (l=0:n-1)
       setparam(j,l) = setparam(i,l)
      end forall
+     !setparam(i,k) = max_range*randreal()
      if(k==0)setparam(j,k) = max_range*randreal()
      if(k>=1)setparam(j,k) = randreal()
      if(k==3)setparam(j,k) = max_range*randreal()
@@ -452,41 +434,45 @@ program iast_desarrollo_GA
 ! calcula el coste
   implicit none
   integer,intent(in)        ::  n,l
-  integer                   ::  i
+  integer                   ::  i = 0
   real,intent(in)           ::  a(0:n-1),x(l),y(l)
   real                      ::  funk(l)
+  real                      ::  x0 = 0.0
   character(100),intent(in) ::  function_
   cost = 0.0
-  select case (function_)
-   case("freundlich")!n = a*x**b #function 
-    forall (i=1:l)
-     funk(i)=a(0)*x(i)**a(1)
-    end forall
-   case ("langmuir") !n = nmax*alfa*P/(1+alfa*P) #function
-    forall (i=1:l)
-     funk(i)=a(0)*a(1)*x(i)/(1+a(1)*x(i))
-    end forall
-   case ("toth")     !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c) #function
-    forall (i=1:l)
-     funk(i)=(a(0)*a(1)*x(i))/((1.0+(a(1)*x(i))**a(2))**(1/a(2)))
-    end forall
-   case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #function
-    forall (i=1:l)
-     funk(i)=a(0)*x(i)/(1.0+(a(0)*x(i)/(a(1)*(1.0+a(3)*x(i))))**a(2))**(1.0/a(2))
-    end forall
-  end select
+  funk = 0.0
+  do i=1,l
+   x0 = x(i)
+   funk(i) = model(a,x0,n,function_)
+  end do
   cost = sum([(abs(y(i)-funk(i))**2,i=1,l)])
   return
  end function cost
 !
- !real function langmuir(a,x,l,n)
- ! implicit none
- ! integer, intent(in)  :: l,n
- ! real, intent(in)     :: a(0,n-1),x(l)
- ! !forall (i=1:l)
- ! langmuir = a(0)*a(1)*x(i)/(1+a(1)*x(i)
- ! !end forall
- ! return
- !end function langmuir
-! 
+ real function model(a,x,n,function_,T)
+  implicit none
+  integer,intent(in)        :: n
+  real,intent(in)           :: a(0:n-1)
+  real,intent(in)           :: x
+  character(100),intent(in) :: function_
+  real,intent(in),optional  :: T
+  real,parameter            :: R = 0.008314472 ! kJ / mol / K
+  select case (function_)
+   case("freundlich")!n = a*x**b #function #model
+    model = a(0)*x**a(1)
+   case ("langmuir") !n = nmax*alfa*P/(1+alfa*P) #function #model
+    model = a(0)*a(1)*x/(1+a(1)*x)
+   case ("toth")     !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c) #function #model
+    model = (a(0)*a(1)*x)/((1.0+(a(1)*x)**a(2))**(1/a(2)))
+   case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #function #model
+    model = a(0)*x/(1+(a(0)*x/(a(1)*(1+a(3)*x))**a(2)))**(1/a(2))
+   case ("dubinin_raduschkevich") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
+    model = a(0)*exp(-((R*T/a(1))*log(a(2)/x) )**2)
+   case ("langmuir_dualsite")      ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P) #model
+    model = a(0)*a(1)*x/(1+a(1)*x) + a(2)*a(3)*x/(1+a(3)*x)
+   case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
+    model = a(0)*exp(-((R*T/a(1))*log(a(2)/x) )**a(3))
+  end select
+  return
+ end function model
 end program iast_desarrollo_GA
