@@ -1,16 +1,15 @@
 module mod_random
+! module for pseudo random numbers
  implicit none
  private
  public init_random_seed, randreal, randint
 contains
- ! From http://gcc.gnu.org/onlinedocs/gfortran/RANDOM_005fSEED.html
  subroutine init_random_seed()
   use iso_fortran_env, only: int64
   implicit none
   integer, allocatable :: seed(:)
   integer :: i, n, un, istat, dt(8), pid
   integer(int64) :: t
-        
   call random_seed(size=n)
   allocate(seed(n))
   ! First try if the OS provides a random number generator
@@ -52,12 +51,10 @@ contains
    lcg = int(mod(s, int(huge(0), int64)), kind(0))
   end function
  end subroutine
- 
     ! Random real (0.0 <= r < 1.0)
  real function randreal()
   call random_number(randreal)
  end function
-
  ! Random int (a <= r <= b)
  integer function randint(a, b)
   integer, intent(in) :: a, b
@@ -67,24 +64,21 @@ contains
 end module
 
 program iast_desarrollo_GA
+ ! IAST program
  use mod_random
  implicit none
-!========================================================================
-! VARIABLES
-!========================================================================
  real             :: comp,concx1,concx2,concy1,concy2
  real,parameter   :: tol = 0.001
  real             :: h1,h2,p,presion1,presion2,n,n1,n2
-! real             :: a1,a2
  real             :: inferior,superior,s1,s2,x0
  integer          :: err_apertura = 0,i,ii,k,l,j,intervalos,npar
  character(100)   :: line,ajuste,test_name
  real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
  real,allocatable :: e_coef1(:),e_coef2(:),param(:,:),eparam(:,:)
  real,allocatable :: puntos1(:),puntos2(:),funcion1(:),funcion2(:)
- ! llamo a la semilla para generar los numeros pseudoaleatorios
- !call get_seed(seed)
+ 
  call init_random_seed()
+
 !========================================================================
 ! PARAMETROS
 !========================================================================
@@ -99,9 +93,6 @@ program iast_desarrollo_GA
 ! concy1 = 0.5       !concentracion fase gas componente1
 ! concy2 = 0.5       !concentracion fase gas componente2
 !========================================================================
-! LECTURA ISOTERMAS 
-!========================================================================
- !abrimos el archivo con las isotermas
  nisothermpure: do ii=1,2
   write (test_name, '( "isoterma", I1, ".dat" )' ) ii
   call system ("cp " // test_name // " isotermaN.dat")
@@ -124,33 +115,28 @@ program iast_desarrollo_GA
   end do do1
   close(100)
  end do nisothermpure
-
 !========================================================================
-! AJUSTE ISOTERMAS
-!========================================================================
-! utilizamos gnuplot para hacer el ajuste y recuperamos los valores a traves del archivo coeficientes
-!!!!mantener el archivo ajustelangmuir en la misma carpeta donde se corra el programa
  select case (ajuste)
-  case("freundlich")!n = a*x**b 
+  case("freundlich")
    npar= 2
    ii  = 2**14 
-  case ("langmuir") !n = nmax*alfa*P/(1+alfa*P)
+  case ("langmuir")
    npar=2
    ii = 2**15
   case ("toth")
    npar=3
    ii = 2**18
-  case ("jensen")   !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c)
+  case ("jensen")
    npar=4
    ii = 2**20
   case ("dubinin_raduschkevich")
-   npar=3 ! temperature a(5)
+   npar=3
    ii = 2*20
   case ("langmuir_dualsite")
    npar=4
    ii = 2**18
   case ("dubinin_astakhov")
-   npar=4 ! temperature a(5)
+   npar=4
    ii = 2**20
  end select
  allocate(param(2,0:npar-1),eparam(2,0:npar-1))
@@ -165,7 +151,6 @@ program iast_desarrollo_GA
   do j=0,npar-1
    param(i,j)=coef1(j)
    eparam(i,j)=e_coef1(j)
-   !write(6,*)param(i,j),eparam(i,j)
   end do
  end do
  do j=0,npar-1
@@ -174,7 +159,7 @@ program iast_desarrollo_GA
   e_coef1(j)=eparam(1,j)
   e_coef2(j)=eparam(2,j)
  end do
- deallocate(param,eparam) ! provisional
+ deallocate(param,eparam)
  
 !========================================================================
 ! CALCULO DE  AREAS
