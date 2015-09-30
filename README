@@ -60,12 +60,15 @@ $ make all
 
 Example 1:
 $ cat input
-jensen .true. #<- Isotherm model: langmuir, toth, freundlich, jensen, dubinin_raduschkevich, langmuir_dualsite, dubinin_astakhov.
-              # El segundo es un valor logico. Si es .true. el programa realiza el ajuste.
-              # En caso contrario no realizará el ajuste y pedirá los parametros en las ultimas lineas en el mismo orden que la fración molar (ejemplo de abajo)
+jensen        #<- Isotherm model: langmuir, toth, freundlich, jensen, dubinin_raduschkevich,
+              #   langmuir_dualsite, dubinin_astakhov.
+
+.true.        #<- The second is a logical value. If it is '.true.' the program realise the fit.
+              #   Otherwise the program will not do the fit, and requested parameters in
+              #   the final lines. Order in the same way that the molar fración (example 2 below).
 1000          #<- Number of output pressures
-0.5           #<- Molar fraction of compound 1 in reservoir
-0.5           #<- Molar fraction of compound 2 in reservoir
+0.5           #<- Molar fraction of compound 1 (isoterma1.dat) in reservoir
+0.5           #<- Molar fraction of compound 2 (isoterma2.dat) in reservoir
 
 # The total molar fraction in the mixture has to be equal to 1
 
@@ -82,9 +85,10 @@ $ cat isoterma1.dat
 10      3.9385998255
 ....
 
-Example 2: En este ejemplo generamos la curva de la mezcla para un mismo set de parametros calculado anteriormente. Esto es conveniente cuando el modelo es complejo.
+Example 2:
 $ cat input
-langmuir_dualsite .false.
+langmuir_dualsite
+.false.
 5000
 0.10
 0.90

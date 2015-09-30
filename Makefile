@@ -1,12 +1,11 @@
-LINKFLAGS_FOR=-O3 -march=native -Wall -fbounds-check
+LINKFLAGS_FOR=-O3 -march=native
 COMP_FOR = gfortran
 all:
 	make install
 	make execute
 	make clean
 install:
-	${COMP_FOR} ${LINKFLAGS_FOR} -c iast.f90
-	${COMP_FOR} ${LINKFLAGS_FOR} -o iast iast.o
+	${COMP_FOR} ${LINKFLAGS_FOR} iast.f90 -o iast
 execute:
 	./iast < input && gnuplot png.gp && display iast.png
 clean:;         @rm -f *.o *.mod iast isotermaN.dat

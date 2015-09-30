@@ -62,8 +62,8 @@ contains
    randint = a + int(randreal() * (b - a + 1))
   end function
 end module
-
-program iast_desarrollo_GA
+!
+program iast_GA
  ! IAST program
  use mod_random
  implicit none
@@ -76,7 +76,7 @@ program iast_desarrollo_GA
  integer          :: err_apertura = 0,i,ii,k,l,j,intervalos,npar
  integer          :: GA_POPSIZE =  1
  integer,parameter:: ncomponents = 2
- character(100)   :: line,ajuste,test_name
+ character(100)   :: line,ajuste,test_name,intmethod = 'Simpsons' ! Simpsons, Trapezes
  real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
  real,allocatable :: e_coef1(:),e_coef2(:),param(:,:),eparam(:,:)
  real,allocatable :: puntos1(:),puntos2(:),funcion1(:),funcion2(:)
@@ -84,20 +84,11 @@ program iast_desarrollo_GA
  
  call init_random_seed()
 
-!========================================================================
-! PARAMETROS
-!========================================================================
- read(5,*)ajuste,flag
+ read(5,*)ajuste
+ read(5,*)flag
  read(5,*)intervalos
- !read(5,*)tol
  read(5,*)concy1
  read(5,*)concy2
-! ajuste = "toth"    !seleccion del ajuste 
-! intervalos = 10000 !numero de puntos para calcular el area
-! tol = 0.001        !tolerancia para igualar areas
-! concy1 = 0.5       !concentracion fase gas componente1
-! concy2 = 0.5       !concentracion fase gas componente2
-!========================================================================
  nisothermpure: do ii=1,ncomponents
   write (test_name, '( "isoterma", I1, ".dat" )' ) ii
   call system ("cp " // test_name // " isotermaN.dat")
@@ -120,13 +111,12 @@ program iast_desarrollo_GA
   end do do1
   close(100)
  end do nisothermpure
-!========================================================================
 ! GA_POPSIZE initialisation
  select case (ajuste)
   case("freundlich")
-   npar= 2
-   GA_POPSIZE  = 2**14 
-  case ("langmuir")
+   npar= 2                ! numero de parametros del modelo.
+   GA_POPSIZE = 2**14     ! tamaño de genoma: aumentarlo incrementa la probabilidad de alcanzar un valor optimo,
+  case ("langmuir")       ! pero tiene un alto coste computacional
    npar=2
    GA_POPSIZE = 2**14
   case ("toth")
@@ -143,7 +133,7 @@ program iast_desarrollo_GA
    GA_POPSIZE = 2**20
   case ("dubinin_astakhov")
    npar=5
-   GA_POPSIZE = 2**23
+   GA_POPSIZE = 2**15
  end select
  allocate(param(ncomponents,0:npar-1),eparam(ncomponents,0:npar-1))
  allocate(coef1(0:npar-1),coef2(0:npar-1),e_coef1(0:npar-1),e_coef2(0:npar-1))
@@ -165,6 +155,7 @@ program iast_desarrollo_GA
   readparameter: do ii=1,ncomponents
    read(5,*)(param(ii,j),j=0,npar-1)
   end do readparameter
+  !write(6,*)'Citizen Elitist: ,',0,'Fitness: ',cost(a,x,y,n,dimen,funk,T)
  end if
  do j=0,npar-1
   coef1(j)=param(1,j)
@@ -179,53 +170,67 @@ program iast_desarrollo_GA
 !========================================================================
  l=size(x2)
  k=size(x1)
- ALLOCATE (puntos1(0:intervalos),puntos2(0:intervalos))
-   IF (x1(1)<x2(1)) THEN
-    inferior =log10(x1(1))
-   ELSE
-    inferior =log10(x2(1))
-   END IF
-   IF (x1(k)<x2(l)) THEN
-    superior =log10(x2(l))
-   ELSE
-    superior =log10(x1(k))
-   END IF
-   h1 = real((superior-inferior)/intervalos)
-   DO i=0,intervalos
-    puntos1(i)=10**(inferior+i*h1) 
-   END DO
+ allocate(puntos1(0:intervalos),puntos2(0:intervalos))
   IF (x1(1)<x2(1)) THEN
-        inferior =log10(x1(1))
+   inferior =log10(x1(1))
   ELSE
-        inferior =log10(x2(1))
+   inferior =log10(x2(1))
   END IF
   IF (x1(k)<x2(l)) THEN
-        superior =log10(x2(l))
+   superior =log10(x2(l))
   ELSE
-        superior =log10(x1(k))
+   superior =log10(x1(k))
+  END IF
+  h1 = real((superior-inferior)/intervalos)
+  DO i=0,intervalos
+   puntos1(i)=10**(inferior+i*h1) 
+  END DO
+  IF (x1(1)<x2(1)) THEN
+   inferior =log10(x1(1))
+  ELSE
+   inferior =log10(x2(1))
+  END IF
+  IF (x1(k)<x2(l)) THEN
+   superior =log10(x2(l))
+  ELSE
+   superior =log10(x1(k))
   END IF
   h2 = real((superior-inferior)/intervalos)
   DO i=0,intervalos
-     puntos2(i)=10**(inferior+i*h2)
+   puntos2(i)=10**(inferior+i*h2)
   END DO
- ALLOCATE(funcion1(0:intervalos),funcion2(0:intervalos))
+ allocate(funcion1(0:intervalos),funcion2(0:intervalos))
  do i=0,intervalos
   x0 = puntos1(i)
   funcion1(i) = model(coef1,x0,npar,ajuste,temperature)
+  x0 = puntos2(i)
   funcion2(i) = model(coef2,x0,npar,ajuste,temperature)
  end do
-! calculamos el area bajo la curva de ajuste utilizando el metodo de los trapecios
- ALLOCATE (area1(0:intervalos),area2(0:intervalos),PI1(0:intervalos),PI2(0:intervalos))
- DO i=0,intervalos-1
-  area1(i)= real((funcion1(i)+funcion1(i+1))*h1/2)!/puntos1(i)
-  area2(i)= real((funcion2(i)+funcion2(i+1))*h2/2)!/puntos2(i)
-  s1 = s1 + area1(i)
-  s2 = s2 + area2(i)
-  PI1(i+1)= s1
-  PI2(i+1)= s2
-  !
- END DO
- 
+ if(intmethod=='Simpsons')then
+  allocate(pi1(0:intervalos),pi2(0:intervalos))
+  do i=0,intervalos
+   concx1 = 10.0**(inferior+i*h1)
+   concx2 = 10.0**(inferior+(i+1)*h1)
+   s1 = s1 + Integrate(concx1,concx2,25,coef1,npar,ajuste,temperature)
+   concx1 = 10.0**(inferior+i*h2)
+   concx2 = 10.0**(inferior+(i+1)*h2)
+   s2 = s2 + Integrate(concx1,concx2,25,coef2,npar,ajuste,temperature)
+   pi1(i) = s1
+   pi2(i) = s2
+  end do
+ else if(intmethod=='Trapezes')then
+  allocate(area1(0:intervalos),area2(0:intervalos),PI1(0:intervalos),PI2(0:intervalos))
+  do i=0,intervalos-1
+   area1(i)= real((funcion1(i)+funcion1(i+1))*h1/2)
+   area2(i)= real((funcion2(i)+funcion2(i+1))*h2/2)
+   s1 = s1 + area1(i)
+   s2 = s2 + area2(i)
+   PI1(i+1)= s1
+   PI2(i+1)= s2
+  end do
+ else
+  stop 'Choose a integration method "intmethod"'
+ end if
  OPEN(221,file='iso1.dat')
  OPEN(222,file='iso2.dat')
  do i=1,intervalos
@@ -266,29 +271,11 @@ program iast_desarrollo_GA
   end do
  end do
  close(104)
- call system ("awk '{print $1,$2,$3,$4}' adsorcion.dat | sort -gk1 > c")
- call system ("mv c adsorcion.dat")
+ !call system ("awk '{print $1,$2,$3,$4}' adsorcion.dat | sort -gk1 > c")
+ !call system ("mv c adsorcion.dat")
  ! deallocate( todo )
- stop
- CONTAINS
-!
-! real function IntegrateIsotherm(x0,x1,x,integration_points)
-!  implicit none
-!  integer              ::  i,integration_points
-!  real                 ::  delta
-!  real                 ::  x0,x
-!  real                 ::  factor
-!  delta=(x1-x0)/(integration_points)
-!  do i = 0,integration_points
-!   factor = 1.0
-!   if (i==0.or.i==integration_points-1) factor = 3.0/8.0
-!   if (i==1.or.i==integration_points-2) factor = 7.0/6.0
-!   if (i==2.or.i==integration_points-3) factor = 23.0/24.0
-!   x = x0 + delta*(0.5+i)
-!   IntegrateIsotherm=IntegrateIsotherm+factor*delta*/x
-!   
-!  end do
-!
+ stop 'IAST finish'
+ contains
  subroutine fitgen(a,ea,n,funk,GA_POPSIZE,T)
 ! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
 ! un ajuste optimo minimizando el coste a una lectura de la isoterma
@@ -413,22 +400,21 @@ program iast_desarrollo_GA
   return
  end subroutine fitgen
 ! ...
-! subroutine sort_by_cost(q,n,setparam,fit,k)
-! implicit none
-! integer,intent(in) :: q,n
-! integer            :: i
-! integer,intent(out):: k
-! real               :: fit(q)
-! real,intent(in)    :: setparam(q,0:n-1)
-! real               :: current_fit = 9999999.9
- ! ...
-! do i=1,size(fit)
-!  if(fit(i)<=current_fit)then
-!   current_fit=fit(i)
-!   k=i
-!  end if
-! end do
-! end subroutine sort_by_cost
+ subroutine sort_by_cost(q,n,setparam,fit,k)
+ implicit none
+ integer,intent(in) :: q,n
+ integer            :: i
+ integer,intent(out):: k
+ real               :: fit(q)
+ real,intent(in)    :: setparam(q,0:n-1)
+ real               :: current_fit = 9999999.9
+ do i=1,size(fit)
+  if(fit(i)<=current_fit)then
+   current_fit=fit(i)
+   k=i
+  end if
+ end do
+ end subroutine sort_by_cost
 ! ...
  real function cost(a,x,y,n,l,function_,T)
 ! calcula el coste
@@ -473,8 +459,30 @@ program iast_desarrollo_GA
    case ("langmuir_dualsite")      ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P) #model
     model = a(0)*a(1)*x/(1+a(1)*x) + a(3)*a(2)*x/(1+a(2)*x)
    case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
-    model = a(0)*exp(-((R*T/a(3))*log(a(4)/x) )**a(2))
+    model = a(0)*exp(-((R*T/a(3))*log(a(4)/x) )**a(1))
   end select
   return
  end function model
-end program iast_desarrollo_GA
+! ...
+ real function integrate(x0,x1,integration_points,a,n,function_,T)
+  implicit none
+  integer              ::  i
+  integer,intent(in)   ::  n,integration_points
+  real                 ::  delta,x
+  real,intent(in)      ::  x0,x1
+  real                 ::  factor
+  real,intent(in)      ::  a(0:n-1),T
+  character(100),intent(in):: function_
+  delta=(x1-x0)/(integration_points)
+  area: do i = 0,integration_points
+   factor = 1.0
+   if (i==0.or.i==integration_points-1) factor = 3.0/8.0
+   if (i==1.or.i==integration_points-2) factor = 7.0/6.0
+   if (i==2.or.i==integration_points-3) factor = 23.0/24.0
+   x = x0 + delta*(0.5+i)
+   Integrate = Integrate + factor*delta*model(a,x,n,function_,T)/x
+  end do area
+  return
+ end function integrate
+! ...
+end program iast_GA
