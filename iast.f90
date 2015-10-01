@@ -273,9 +273,10 @@ program iast_GA
  close(104)
  !call system ("awk '{print $1,$2,$3,$4}' adsorcion.dat | sort -gk1 > c")
  !call system ("mv c adsorcion.dat")
- ! deallocate( todo )
+ deallocate(puntos1,puntos2,pi1,pi2,funcion1,funcion2)
  stop 'IAST finish'
  contains
+! 
  subroutine fitgen(a,ea,n,funk,GA_POPSIZE,T)
 ! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
 ! un ajuste optimo minimizando el coste a una lectura de la isoterma
@@ -398,6 +399,7 @@ program iast_GA
    ea(k)= sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)])/real(GA_POPSIZE-1) )
   end do
   return
+  deallocate(x,y)
  end subroutine fitgen
 ! ...
  subroutine sort_by_cost(q,n,setparam,fit,k)
@@ -484,5 +486,4 @@ program iast_GA
   end do area
   return
  end function integrate
-! ...
 end program iast_GA
