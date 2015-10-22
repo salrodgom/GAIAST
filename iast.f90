@@ -68,32 +68,58 @@ program iast_GA
  use mod_random
  implicit none
  real             :: comp,concx1,concx2,concy1,concy2
- real,parameter   :: tol = 0.001
- real,parameter   :: temperature = 298.0
+ real             :: tol = 0.001
+ real             :: temperature = 298.0
  real             :: h1,h2,p,presion1,presion2,n,n1,n2
  real             :: inferior,superior
  real             :: s1 = 0.0,s2 = 0.0,x0
  integer          :: err_apertura = 0,i,ii,k,l,j,intervalos,npar
  integer          :: GA_POPSIZE =  1
- integer,parameter:: ncomponents = 2
- character(100)   :: line,ajuste,test_name,intmethod = 'Simpsons' ! Simpsons, Trapezes
+ integer          :: ncomponents = 2
+ character(100)   :: line,ajuste,test_name,intmethod = 'Trapezes' ! Simpsons, Trapezes
+ character(5)     :: inpt
  real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
  real,allocatable :: e_coef1(:),e_coef2(:),param(:,:),eparam(:,:)
  real,allocatable :: puntos1(:),puntos2(:),funcion1(:),funcion2(:)
  logical          :: flag = .true.
  
  call init_random_seed()
-
- read(5,*)ajuste
- read(5,*)flag
- read(5,*)intervalos
- read(5,*)concy1
- read(5,*)concy2
+ read_input: do
+  read(5,'(A)',iostat=err_apertura)line
+  if ( err_apertura /= 0 ) exit read_input
+  if(line(1:5)=='model')then
+   read(line,*)inpt,ajuste
+   call MakeInitPOP(ajuste,npar,GA_POPSIZE)
+   allocate(param(ncomponents,0:npar-1),eparam(ncomponents,0:npar-1))
+   allocate(coef1(0:npar-1),coef2(0:npar-1),e_coef1(0:npar-1),e_coef2(0:npar-1))
+  end if
+  if(line(1:5)=='ffit?') read(line,*)inpt,flag
+  if(flag.eqv..false.)then
+   write(6,*)'Fit is already done'
+   readparameter: do ii=1,ncomponents
+    if(ncomponents>=3) stop "[ERROR] Uh Oh: you're screwed"
+    read(5,*)(param(ii,j),j=0,npar-1)
+   end do readparameter
+  end if
+  if(line(1:5)=='inter') read(line,*)inpt,intervalos
+  if(line(1:5)=='toler') read(line,*)inpt,tol
+  if(line(1:5)=='tempe') read(line,*)inpt,temperature
+  if(line(1:5)=='ncomp')then
+   read(line,*)inpt,ncomponents
+  !do ii =1,ncomponents
+   read(5,*)concy1
+   read(5,*)concy2
+  !end do
+  end if
+  if(line(1:5)=='InteM') read(line,*)inpt,intmethod
+  if(err_apertura/=0) exit read_input
+ end do read_input
+ !
  nisothermpure: do ii=1,ncomponents
   write (test_name, '( "isoterma", I1, ".dat" )' ) ii
   call system ("cp " // test_name // " isotermaN.dat")
   open(unit=100,file="isotermaN.dat",status='old',iostat=err_apertura)
-  if(err_apertura/=0) stop '[error] isotermaN.dat'
+  if(err_apertura/=0) stop '[ERROR] isotermaN.dat :  Catastrophic failure'
   k=0 
   do0: do
    READ (100,'(A)',IOSTAT=err_apertura) line 
@@ -111,32 +137,6 @@ program iast_GA
   end do do1
   close(100)
  end do nisothermpure
-! GA_POPSIZE initialisation
- select case (ajuste)
-  case("freundlich")
-   npar= 2                ! numero de parametros del modelo.
-   GA_POPSIZE = 2**14     ! tamaño de genoma: aumentarlo incrementa la probabilidad de alcanzar un valor optimo,
-  case ("langmuir")       ! pero tiene un alto coste computacional
-   npar=2
-   GA_POPSIZE = 2**14
-  case ("toth")
-   npar=3
-   GA_POPSIZE = 2**18
-  case ("jensen")
-   npar=4
-   GA_POPSIZE = 2**21
-  case ("dubinin_raduschkevich")
-   npar=5
-   GA_POPSIZE = 2*23
-  case ("langmuir_dualsite")
-   npar=4
-   GA_POPSIZE = 2**20
-  case ("dubinin_astakhov")
-   npar=5
-   GA_POPSIZE = 2**15
- end select
- allocate(param(ncomponents,0:npar-1),eparam(ncomponents,0:npar-1))
- allocate(coef1(0:npar-1),coef2(0:npar-1),e_coef1(0:npar-1),e_coef2(0:npar-1))
  if(flag)then
   do i=1,ncomponents
    coef1=0
@@ -151,11 +151,11 @@ program iast_GA
     eparam(i,j)=e_coef1(j)
    end do
   end do
- else
-  readparameter: do ii=1,ncomponents
-   read(5,*)(param(ii,j),j=0,npar-1)
-  end do readparameter
-  !write(6,*)'Citizen Elitist: ,',0,'Fitness: ',cost(a,x,y,n,dimen,funk,T)
+ !else
+ ! readparameter: do ii=1,ncomponents
+ !  read(5,*)(param(ii,j),j=0,npar-1)
+ ! end do readparameter
+ ! !write(6,*)'Citizen Elitist: ,',0,'Fitness: ',cost(a,x,y,n,dimen,funk,T)
  end if
  do j=0,npar-1
   coef1(j)=param(1,j)
@@ -276,6 +276,36 @@ program iast_GA
  deallocate(puntos1,puntos2,pi1,pi2,funcion1,funcion2)
  stop 'IAST finish'
  contains
+!
+ subroutine MakeInitPOP(funk,n,POPSIZE)
+ implicit none
+ character(100),intent(in)::  funk
+ integer,intent(out)::        n,POPSIZE
+ select case (ajuste)
+  case("freundlich")
+   n= 2                   ! numero de parametros del modelo.
+   POPSIZE = 2**14        ! tamaño de genoma: aumentarlo incrementa la probabilidad de alcanzar un valor optimo,
+  case ("langmuir")       ! pero tiene un alto coste computacional
+   n=2
+   POPSIZE = 2**16
+  case ("toth")
+   n=3
+   POPSIZE = 2**18
+  case ("jensen")
+   n=4
+   POPSIZE = 2**23
+  case ("dubinin_raduschkevich")
+   n=5
+   POPSIZE = 2*23
+  case ("langmuir_dualsite")
+   n=4
+   POPSIZE = 2**18
+  case ("dubinin_astakhov")
+   n=5
+   POPSIZE = 2**15
+ end select
+ return
+ end subroutine MakeInitPOP
 ! 
  subroutine fitgen(a,ea,n,funk,GA_POPSIZE,T)
 ! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
@@ -343,7 +373,7 @@ program iast_GA
    f2 = cost(a,x,y,n,dimen,funk,T)
    fit(i)=f1
    fit(j)=f2
-   if (abs(f1 - f2) <= 0.000001 ) then
+   if (abs(f1 - f2) <= 0.0000001 ) then
       h = h + 1
       if ( h >= 1000 ) then
        exit mix
