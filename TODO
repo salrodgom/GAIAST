@@ -5,6 +5,5 @@ Things that you could improve:
 -add the possiblity to avoid displaying the picture (by adding a yes/no option in the input)
 -It would be helpfully that the output png file would include the name of the models used during the fitting phase. In this way you can run several models of the same mixture and to obtain different files (they do not re-write each other).
 -same with output data files. (these two points should be implemented by each user in its own script)
-
-
+- El reparto de los puntos habría que hacerlo en logaritmico en lugar de lineal
 

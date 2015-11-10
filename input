@@ -1,5 +1,10 @@
-model langmuir
-inter 3000
+model lagmuir
+#model langmuir_dualsite  
+#model toth # subida poco abrupta
+# model lagmuir
+# model  freundlich # Para cuando no está definida la saturación
+# moel jensen # saturacion que no termina de saturar (langmuir que no acaba de saturar, saturacion con un poquito de pendiente)
+inter 1500
 ncomp 2
 0.5
 0.5
