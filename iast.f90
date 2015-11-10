@@ -293,7 +293,7 @@ program iast_GA
    POPSIZE = 2**18
   case ("jensen")
    n=4
-   POPSIZE = 2**23
+   POPSIZE = 2**18
   case ("dubinin_raduschkevich")
    n=5
    POPSIZE = 2*23
