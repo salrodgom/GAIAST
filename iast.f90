@@ -287,7 +287,7 @@ program iast_GA
    POPSIZE = 2**14        ! tamaño de genoma: aumentarlo incrementa la probabilidad de alcanzar un valor optimo,
   case ("langmuir")       ! pero tiene un alto coste computacional
    n=2
-   POPSIZE = 2**16
+   POPSIZE = 2**18
   case ("toth")
    n=3
    POPSIZE = 2**18
