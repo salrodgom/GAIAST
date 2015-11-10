@@ -1,8 +1,8 @@
 model langmuir
 inter 3000
 ncomp 2
-0.5
-0.5
+0.9999
+0.0001
 #InteM Trapezes
 ffit? .true.
 3.62657309  8.96513462E-04  0.983081698

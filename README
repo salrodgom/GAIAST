@@ -2,6 +2,7 @@ Genetic Algorithm IAST
 ======================
 This is the IAST code.
 Updated: Tue 29 Sep, 2015, 14:48:35
+Updated: Mon 09 Nov, 2015, 14:50:01
 First version:   Rafael Aguilar, Rocio Bueno
 Updated version: Salvador Rodríguez Gómez
 
@@ -87,11 +88,12 @@ $ cat isoterma1.dat
 
 Example 2:
 $ cat input
-langmuir_dualsite
-.false.
-5000
-0.10
-0.90
-4.35646772      0.673587024       6.97058439E-03  0.323694944
-0.793254375     3.05414200E-04    0.103873610     3.46274376
-
+model toth
+inter 3000
+ncomp 2
+0.9999
+0.0001
+#InteM Trapezes
+ffit? .false.
+3.62657309  8.96513462E-04  0.983081698
+21.0449753  0.635752559     0.562331498
