@@ -1,4 +1,4 @@
-LINKFLAGS_FOR=-O3 -march=native
+LINKFLAGS_FOR=-O3 -march=native -fbounds-check
 COMP_FOR = gfortran
 all:
 	make install

@@ -63,9 +63,103 @@ contains
   end function
 end module
 !
+module mod_genetic
+ use mod_random
+ implicit none
+ private
+ integer, parameter                 :: ga_size = 2048
+ real,parameter                     :: ga_eliterate=0.15, ga_mutationrate=0.25
+ integer,parameter                  :: ga_elitists = int( ga_size * ga_eliterate)
+ character(len=*),parameter         :: ga_target="57.6470.524540.052458.432134"
+ 
+ type :: typ_ga
+  character(len=len(ga_target))     :: str
+  integer                           :: fitness
+ end type
+ type(typ_ga), pointer :: parents(:)
+ type(typ_ga), pointer :: children(:)
+ type(typ_ga), target  :: pop_alpha(GA_SIZE)
+ type(typ_ga), target  :: pop_beta(GA_SIZE)
+ contains
+  type(typ_ga) function new_citizen()
+   integer :: i
+   do i = 1, len(GA_TARGET)
+    new_citizen%str(i:i) = achar(randint(32, 122))
+   end do
+   new_citizen%fitness = fitness(new_citizen%str)
+  end function
+
+  integer function fitness(str)
+   character(len=*), intent(in) :: str
+   integer :: i
+   fitness = sum([(abs(iachar(str(i:i)) - iachar(GA_TARGET(i:i))), i = 1, len(GA_TARGET))])
+  end function
+
+  subroutine sort_by_fitness()
+   type(typ_ga) :: sorted(GA_SIZE)
+   integer, parameter :: char_range = 122 - 32
+   integer, parameter :: largest_fitness = char_range * len(GA_TARGET)
+   integer :: sort_count(0:largest_fitness)
+   integer :: i, cur_count, total
+   sort_count = 0
+   do i = 1, GA_SIZE
+       sort_count(parents(i)%fitness) = sort_count(parents(i)%fitness) + 1
+   end do
+   total = 0
+   do i = 0, size(sort_count)
+       cur_count = sort_count(i)
+       sort_count(i) = total
+       total = total + cur_count
+   end do
+   do i = 1, GA_SIZE
+       sorted(sort_count(parents(i)%fitness)) = parents(i)
+       sort_count(parents(i)%fitness) = sort_count(parents(i)%fitness) + 1
+   end do
+   parents = sorted
+  end subroutine
+      
+  subroutine elitism()
+   children(:GA_ELITISTS) = parents(:GA_ELITISTS)
+  end subroutine
+
+  subroutine mutate(citizen)
+   type(typ_ga), intent(inout) :: citizen
+   integer :: ipos
+   ipos = randint(1, len(GA_TARGET))
+   citizen%str(ipos:ipos) = achar(randint(32, 122))
+  end subroutine
+
+  subroutine mate()
+   integer :: i, i1, i2, spos
+   call elitism()
+   do i = GA_ELITISTS + 1, GA_SIZE
+       i1 = randint(1, GA_SIZE / 2)
+       i2 = randint(1, GA_SIZE / 2)
+       spos = randint(0, len(GA_TARGET))
+       children(i)%str = parents(i1)%str(:spos) // parents(i2)%str(spos+1:)
+       if (randreal() < GA_MUTATIONRATE) then
+           call mutate(children(i))
+       end if
+       children(i)%fitness = fitness(children(i)%str)
+   end do
+  end subroutine
+
+  subroutine swap()
+   if (associated(parents, target=pop_alpha)) then
+    parents => pop_beta
+    children => pop_alpha
+   else
+    parents => pop_alpha
+    children => pop_beta
+   end if
+  end subroutine
+  
+end module
+!
 program iast_GA
  ! IAST program
  use mod_random
+ use mod_genetic
  implicit none
  real             :: comp,concx1,concx2,concy1,concy2
  real             :: tol = 0.001
@@ -81,7 +175,7 @@ program iast_GA
  real,allocatable :: x1(:),y1(:),x2(:),y2(:),coef1(:),coef2(:),PI1(:),PI2(:),area1(:),area2(:)
  real,allocatable :: e_coef1(:),e_coef2(:),param(:,:),eparam(:,:)
  real,allocatable :: puntos1(:),puntos2(:),funcion1(:),funcion2(:)
- logical          :: flag = .true.
+ logical          :: flag = .true.,iniflag
  
  call init_random_seed()
  read_input: do
@@ -115,6 +209,7 @@ program iast_GA
   if(err_apertura/=0) exit read_input
  end do read_input
  !
+ iniflag=.true.
  nisothermpure: do ii=1,ncomponents
   write (test_name, '( "isoterma", I1, ".dat" )' ) ii
   call system ("cp " // test_name // " isotermaN.dat")
@@ -145,7 +240,8 @@ program iast_GA
    write(6, '( "Fitting isoterma", I1, ".dat" )' ) i
    write(6,'("Isotherm model: ",A)') ajuste 
    call system ("cp " // test_name // " isotermaN.dat")
-   call fitgen(coef1,e_coef1,npar,ajuste,GA_POPSIZE,temperature)
+   call fitgen(coef1,e_coef1,npar,ajuste,GA_POPSIZE,temperature,iniflag)
+   iniflag=.false.
    do j=0,npar-1
     param(i,j)=coef1(j)
     eparam(i,j)=e_coef1(j)
@@ -284,30 +380,184 @@ program iast_GA
  select case (ajuste)
   case("freundlich")
    n= 2                   ! numero de parametros del modelo.
-   POPSIZE = 2**14        ! tamaño de genoma: aumentarlo incrementa la probabilidad de alcanzar un valor optimo,
+   POPSIZE = 2**12        ! tamaño de genoma: aumentarlo incrementa la probabilidad de alcanzar un valor optimo,
   case ("langmuir")       ! pero tiene un alto coste computacional
    n=2
-   POPSIZE = 2**18
+   POPSIZE = 2**14
   case ("toth")
    n=3
-   POPSIZE = 2**18
+   POPSIZE = 2**14
   case ("jensen")
    n=4
-   POPSIZE = 2**18
+   POPSIZE = 2**16
   case ("dubinin_raduschkevich")
    n=5
-   POPSIZE = 2*23
+   POPSIZE = 2*16
   case ("langmuir_dualsite")
    n=4
    POPSIZE = 2**18
   case ("dubinin_astakhov")
    n=5
-   POPSIZE = 2**15
+   POPSIZE = 2**12
  end select
  return
  end subroutine MakeInitPOP
 ! 
- subroutine fitgen(a,ea,n,funk,GA_POPSIZE,T)
+ subroutine fitgen(a,ea,n,funk,GA_POPSIZE,T,iniflag)
+! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
+! un ajuste optimo minimizando el coste a una lectura de la isoterma
+  implicit none
+  integer                  ::  i,j,k,l,h,err_apertura,dimen
+  integer,intent(in)       ::  GA_POPSIZE,n
+  real,intent(in)          ::  T
+  real,intent(out)         ::  a(0:n-1),ea(0:n-1)
+  real                     ::  setparam(GA_POPSIZE,0:n-1),fit(GA_POPSIZE)
+  real                     ::  f1,f2
+  character(100)           ::  line
+  character(100),intent(in)::  funk
+  real,allocatable         ::  x(:),y(:)
+  real,parameter           ::  mutationP0   = 0.25
+  real,parameter           ::  eliterateP0  = 0.80
+  real,parameter           ::  tol = 1.0
+  real,parameter           ::  max_range = 25.0
+  real                     ::  mutationP,eliterateP, renorm = 0.0, suma = 0.0,rrr
+  logical       ::  iniflag
+  fit = 99999999.99
+  open(unit=123,file='isotermaN.dat',iostat=err_apertura)
+  if(err_apertura/=0)stop '[error] open file'
+  l=0
+  dofit0: do
+   read(123,'(A)',iostat=err_apertura) line
+   if(err_apertura/=0) exit dofit0
+   l=l+1
+  end do dofit0
+  allocate(x(l),y(l))
+  rewind(123)
+  dofit1: do i=1,l
+   read(123,'(A)',iostat=err_apertura) line
+   if(err_apertura/=0) exit dofit1
+   read(line,*) x(i),y(i)
+   write(6,*) x(i),y(i)
+  end do dofit1
+  close(123)
+  dimen=l
+  h = 0
+  !a  = 0.0
+  !ea = 0.0
+  if(iniflag)then
+  init_set: do k=1,GA_POPSIZE
+   do j=0,n-1
+    if(j==0)setparam(k,j) = max_range*randreal()
+    if(j>=1)setparam(k,j) = randreal()
+    if(j==3)setparam(k,j) = max_range*randreal()
+    if(j==4)setparam(k,j) = (minval(x)/2.0 + 2*maxval(x)*randreal())
+    if(j==5)setparam(k,j) = max_range*randreal()
+   end do
+  end do init_set
+  else
+  cont_set: do k=1,GA_POPSIZE
+   if( randreal() <= eliterateP0 ) then
+    do j=0,n-1
+     setparam(k,j) = a(j)
+    end do
+   else
+    do j=0,n-1
+     if(j==0)setparam(k,j) = max_range*randreal()
+     if(j>=1)setparam(k,j) = randreal()
+     if(j==3)setparam(k,j) = max_range*randreal()
+     if(j==4)setparam(k,j) = (minval(x)/2.0 + 2*maxval(x)*randreal())
+     if(j==5)setparam(k,j) = max_range*randreal()
+    end do
+   end if
+  end do cont_set
+  end if
+  mix: do
+   mutationP=mutationP0
+   eliterateP=eliterateP0
+   i = randint(1,GA_POPSIZE)
+   j = randint(1,GA_POPSIZE)
+   do while (i==j)
+    j = randint(1,GA_POPSIZE)
+   end do
+   do k=0,n-1
+    a(k) = setparam(i,k)
+   end do
+   f1 = cost(a,x,y,n,dimen,funk,T)
+   do k=0,n-1
+    a(k) = setparam(j,k)
+    ea(k)= 0.0
+   end do
+   f2 = cost(a,x,y,n,dimen,funk,T)
+!  hemos calculado los fitness de cada citizen a la funk
+   fit(i)=f1
+   fit(j)=f2
+   if (abs(f1 - f2) <= 0.0000000001 ) then
+      h = h + 1
+      if ( h >= 100000 ) then
+       exit mix
+      end if
+   end if
+   renorm = f1*f2/(f1+f2)
+   f1=renorm/f1
+   f2=renorm/f2
+   suma = 1.0/(f1+f2+mutationP+eliterateP)
+   f1=f1*suma
+   f2=f2*suma
+   mutationP=mutationP*suma
+   eliterateP=eliterateP*suma
+   rrr = randreal()
+!  ...
+   if(rrr<=f1)then
+     do l=0,n-1 ! 2 <- 1
+      setparam(j,l) = setparam(i,l)
+     end do
+   else if ( rrr > f1 .and. rrr<= f2 + f1 ) then
+     do l=0,n-1 ! 1 <- 2
+      setparam(i,l) = setparam(j,l)
+     end do
+   else if ( rrr > f2 .and. rrr<= mutationP ) then
+    k = randint(0,n-1) ! k-esima componente
+    if(f1 <= f2) then  ! coste de i > coste de j
+     forall (l=0:n-1)
+      setparam(i,l) = setparam(j,l)
+     end forall
+     if(k==0)setparam(i,k) = max_range*randreal()
+     if(k>=1)setparam(i,k) = randreal()
+     if(k==3)setparam(i,k) = max_range*randreal()
+     if(k==4)setparam(i,k) = (minval(x)/2.0 + 2*maxval(x)*randreal())
+     if(k==5)setparam(i,k) = max_range*randreal()
+    else
+     forall (l=0:n-1)
+      setparam(j,l) = setparam(i,l)
+     end forall
+     if(k==0)setparam(j,k) = max_range*randreal()
+     if(k>=1)setparam(j,k) = randreal()
+     if(k==3)setparam(j,k) = max_range*randreal()
+     if(k==4)setparam(j,k) = (minval(x)/2.0 + 2*maxval(x)*randreal())
+     if(k==5)setparam(j,k) = max_range*randreal()
+    end if
+   else
+    k =  minloc(fit, dim=1)
+    do l=0,n-1
+     setparam(i,l) = setparam(k,l)
+     setparam(j,l) = setparam(k,l)
+    end do
+   end if
+  end do mix
+  i = minloc(fit, dim=1)
+  write(6,*)'Citizen Elitist:',i,'Fitness:',fit(i)
+  write(6,*)'Parameters:',(setparam(i,k),k=0,n-1)!, &
+  !'Deviations:',(sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)]) &
+  !/ real(GA_POPSIZE-1) ),k=0,n-1)
+  do k=0,n-1
+   a(k) = setparam(i,k)
+   ea(k)= sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)])/real(GA_POPSIZE-1) )
+  end do
+  return
+  deallocate(x,y)
+ end subroutine fitgen
+!...
+ subroutine fitgen2(a,ea,n,funk,GA_POPSIZE,T)
 ! crea un vector de valores posibles de ajuste y va mezclando 'genes' para alcanzar
 ! un ajuste optimo minimizando el coste a una lectura de la isoterma
   implicit none
@@ -371,11 +621,12 @@ program iast_GA
     ea(k)= 0.0
    end do
    f2 = cost(a,x,y,n,dimen,funk,T)
+!  hemos calculado los fitness de cada citizen a la funk
    fit(i)=f1
    fit(j)=f2
    if (abs(f1 - f2) <= 0.0000001 ) then
       h = h + 1
-      if ( h >= 1000 ) then
+      if ( h >= 10000 ) then
        exit mix
       end if
    end if
@@ -387,6 +638,7 @@ program iast_GA
    f2=f2*suma
    mutationP=mutationP*suma
    rrr = randreal()
+!  ...
    if(rrr<=f1)then
      do l=0,n-1 ! 2 <- 1
       setparam(j,l) = setparam(i,l)
@@ -421,16 +673,16 @@ program iast_GA
   i = minloc(fit, dim=1)
   write(6,*)'Citizen Elitist:',i,'Fitness:',fit(i)
   !call sort_by_cost(q,n,setparam,fit,i)
-  write(6,*)'Parameters:',(setparam(i,k),k=0,n-1), &
-  'Deviations:',(sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)]) &
-  / real(GA_POPSIZE-1) ),k=0,n-1)
+  write(6,*)'Parameters:',(setparam(i,k),k=0,n-1)!, &
+  !'Deviations:',(sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)]) &
+  !/ real(GA_POPSIZE-1) ),k=0,n-1)
   do k=0,n-1
    a(k) = setparam(i,k)
    ea(k)= sqrt( sum([((setparam(j,k)-a(k))**2,j=1,GA_POPSIZE)])/real(GA_POPSIZE-1) )
   end do
   return
   deallocate(x,y)
- end subroutine fitgen
+ end subroutine fitgen2
 ! ...
  subroutine sort_by_cost(q,n,setparam,fit,k)
  implicit none
