@@ -1,0 +1,7 @@
+ncomp 2
+1  langmuir_freundlich_dualsite 
+1  langmuir_freundlich_dualsite
+inter 2048
+ffit? .true.
+1.07031262       5.71286146E-05   1.70117188       1.33166583E-02
+1.12077630       2.98780417     -0.375010014      -2.27834551E-08

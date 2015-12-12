@@ -12,11 +12,13 @@ set xlabel 'Pressure / a. u.'
 set ylabel 'Loading / a. u.'
 set multiplot layout 1,2
 set logscale x
-set yrange [0:]
-plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'C_1',\
-     'isoterma2.dat' w p pt 6 lc rgb 'green' t 'C_2',\
+set yrange [0:3]
+plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'NO_2 RASPA',\
+     'isoterma2.dat' w p pt 6 lc rgb 'green' t 'N_2O_4 RASPA',\
      'curves.txt' u 1:2 w l lt 1 lc rgb 'red'   notitle,\
      'curves.txt' u 4:5 w l lt 1 lc rgb 'green' notitle
-plot 'adsorcion.dat' u 1:2 w p pt 7 ps 0.5 lt 1 lc rgb 'red' t 'C_1',\
-     'adsorcion.dat' u 1:3 w p pt 7 ps 0.5 lt 1 lc rgb 'green' t 'C_2'
+plot 'adsorcion.dat' u 1:2 w p pt 7 ps 0.5 lt 1 lc rgb 'red' t 'NO_2 IAST',\
+     'adsorcion.dat' u 1:3 w p pt 7 ps 0.5 lt 1 lc rgb 'green' t 'N_2O_4 IAST',\
+     '50-50/TON_273.10K.load' u 1:2 w p pt 6 lc rgb 'red' t 'NO_2 RASPA',\
+     '50-50/TON_273.10K.load' u 1:3 w p pt 6 lc rgb 'green' t 'N_2O_4 RASPA'
 unset multiplot
