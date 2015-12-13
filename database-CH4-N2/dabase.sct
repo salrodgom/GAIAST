@@ -5,8 +5,8 @@ file2=n2.txt
 #
 function make_input_iast {
 echo "ncomp 2
-0.5 langmuir_dualsite
-0.5 langmuir_dualsite
+1.0 langmuir_dualsite
+1.0 langmuir_dualsite
 inter  2048
 ffit? .true." > input
 }
@@ -17,11 +17,12 @@ while read line ; do
  grep $line $file1 | sed 's/;/ /g' | awk '{print $4,$5}' > isoterma1.dat
  grep $line $file2 | sed 's/;/ /g' | awk '{print $4,$5}' > isoterma2.dat
  make_input_iast
- ./gaiast < input
+ make execute
  gnuplot png.gp
  mv iast.png ${line}.png
  mkdir $line
  mv input* *.png *.dat curves.txt $line
  rm $line/adsorcion.dat
 done < list
+make clean
 exit 0
