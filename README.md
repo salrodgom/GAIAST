@@ -1,1 +1,1 @@
-# gaiast-1.0
+README
