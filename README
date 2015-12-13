@@ -3,97 +3,45 @@ Genetic Algorithm IAST
 This is the IAST code.
 Updated: Tue 29 Sep, 2015, 14:48:35
 Updated: Mon 09 Nov, 2015, 14:50:01
-First version:   Rafael Aguilar, Rocio Bueno
+Updated: Sun 13 Dic, 2015, 19:59:38
+First version:   Rafael Aguilar, Rocio Bueno-Perez
 Updated version: Salvador Rodríguez Gómez
 
 Input files:
 ============
 "input", "isoterma1.dat" and "isoterma2.dat"
 
-Fitting:
-========
- Genetic Algorithm by the easy way. The hard way is work in progress (branch "genetic")
- Improvement: you can increase the velocity of the fit by decreasing the "GA_POPSIZE" value. It's a BIG number
 
-$ grep -A20 'GA_POPSIZE ini' *.f90
- select case (ajuste)
-  case("freundlich")
-   npar= 2
-   GA_POPSIZE  = 2**14 
-  case ("langmuir")
-   npar=2
-   GA_POPSIZE = 2**14
-  case ("toth")
-   npar=3
-   GA_POPSIZE = 2**18
-....
- 
- Models:
- -------
-$ grep '#model' *.f90
- case("freundlich") !n = a*x**b                                    #model
- case("langmuir")   !n = nmax*alfa*P/(1+alfa*P)                    #model
- case("toth")       !n=f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)     #model
- case("jensen")     !n = k1*x/(1+(k1*x/(alfa*(1+k2*x))**c))**(1/c) #model
- case("dubinin_raduschkevich")! N=Nm*exp(-(RT/Eo ln(Po/P))^2)      #model
- case("langmuir_dualsite")    ! N=Nm*b*P/(1+b*P) + Nn*c*P/(1+c*P)  #model
- case("dubinin_astakhov")     ! N=Nm*exp(-(RT/Eo ln(Po/P))^d)      #model
-
-The "dubinin_raduschkevich" and "dubinin_astakhov" models use a thermal parameter.
-The default value of the temperature is 298.0 K. You can change this value in the follow line: 
-$ grep 'temperature' *.f90
- real,parameter   :: temperature = 298.0
-
-Multicomponent (>2):
-====================
- Work in progres (branch "multicomponent").
-
-Installation, Configuration, Usage:
-===================================
-
-$ make install
-$ make execute
-$ make clean
-
-Or just:
-
-$ make all
-
-Example 1:
 $ cat input
-jensen        #<- Isotherm model: langmuir, toth, freundlich, jensen, dubinin_raduschkevich,
-              #   langmuir_dualsite, dubinin_astakhov.
 
-.true.        #<- The second is a logical value. If it is '.true.' the program realise the fit.
-              #   Otherwise the program will not do the fit, and requested parameters in
-              #   the final lines. Order in the same way that the molar fración (example 2 below).
-1000          #<- Number of output pressures
-0.5           #<- Molar fraction of compound 1 (isoterma1.dat) in reservoir
-0.5           #<- Molar fraction of compound 2 (isoterma2.dat) in reservoir
-
-# The total molar fraction in the mixture has to be equal to 1
-
-$ cat isoterma1.dat
-0.01    0.0049446691   <- Pressure and  Loading (arbitrary units)
-0.03    0.0166564028
-0.06    0.0294963598
-0.1     0.0520963225
-0.3     0.2009579106
-0.6     0.4827990407
-1       2.1155133252
-3       3.4799668446
-6       3.8092907411
-10      3.9385998255
-....
-
-Example 2:
-$ cat input
-model toth
-inter 3000
+# ncomp = numero de componentes, a continuacion se abre un loop de tantas filas como componentes
+# fraccion molar, (el programa normaliza a 1 en funcion de la proporcion del input)
+# y modelo al que se vva a ajustar cada isoterma (isoterma1.dat, isoterma2.dat )
+# freundlich:                   a(0)*xx**a(1)
+# langmuir  :                   a(0)*a(1)*xx/(1+a(1)*xx)
+# langmuir_freundlich:          a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))
+# toth:                         a(0)*a(1)*x/(1+(a(1)*x)**a(2))**(1/a(2))
+# langmuir_dualsite:            a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
+# langmuir_freundlich_dualsite: a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2)) + a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
+# jensen:                       a(0)*xx/(1.0+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3)) 
+# dubinin_raduschkevich:        a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
+# dubinin_astakhov              a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
 ncomp 2
-0.9999
-0.0001
-#InteM Trapezes
-ffit? .false.
-3.62657309  8.96513462E-04  0.983081698
-21.0449753  0.635752559     0.562331498
+1.0 langmuir_dualsite
+1.0 langmuir_dualsite
+# inter: numero de presiones que van a tener las isotermas  de la mezcla
+inter 2048
+# ffit? : valor logico, por defecto .true. :  
+# .true. se procede al ajuste de las isotermas, .false. > Los parametros se toman en un loop que se abre en las lineas siguientes, a linea por componente
+ffit? .true.
+#6.26591444  0.336124897     1851124.88   7.94526875E-11
+#5.76275444  7.58524984E-02  1.04496074
+# Fire? es para realizar ajustes rapidos (por defecto .false.), no use esto de forma formal.
+# Puede ser valido para isotermas, muy dispares en forma y presiones.
+# Se marca una parada para el ajuste en el fitness, con una tolerancia marcada por el real de la siguiente linea
+Fire? .false.
+#0.1
+# temperatura, por defecto 298 K, para aquellos modelos que la necesitan: dubinin_raduschkevich
+temp  298.0
+# tol, tolerancia del IAST para considerar que la presion parcial de los componentes esta igualada, por defecto 0.001
+tol   0.0001
