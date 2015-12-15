@@ -54,7 +54,7 @@ contains
   randint=int(r4_uniform(a,b+1.0,seed))
  end function randint
 
- REAL function r4_uniform2(b1,b2,seed)
+ REAL function r4_uniform(b1,b2,seed)
   implicit none
   real b1,b2
   integer i4_huge,k,seed
@@ -73,14 +73,6 @@ contains
     seed=seed+i4_huge
   endif
   r4_uniform=b1+(b2-b1)*real(dble(seed)* 4.656612875D-10)
-  return
- end function r4_uniform2
-
- real function r4_uniform(b1,b2,seed)
-  implicit none
-  real,intent(in)    :: b1,b2
-  integer,intent(in) :: seed
-  r4_uniform = b1+(b2-b1)*iast_rand(seed,1)
   return
  end function r4_uniform
 
