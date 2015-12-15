@@ -6,6 +6,9 @@ all:
 	make install
 	make execute
 	make clean
+	make plot
 execute:
 	./gaiast < input
+plot:
+	gnuplot png.gp ; display iast.png
 clean:;         @rm -f *.o *.mod gaiast isotermaN.dat

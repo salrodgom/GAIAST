@@ -4,7 +4,6 @@ module mod_random
  private
  public init_random_seed, randint, r4_uniform
 contains
-
  subroutine init_random_seed(seed)
   implicit none
   integer, intent(out) :: seed
@@ -55,7 +54,7 @@ contains
   randint=int(r4_uniform(a,b+1.0,seed))
  end function randint
 
- REAL function r4_uniform(b1,b2,seed)
+ REAL function r4_uniform2(b1,b2,seed)
   implicit none
   real b1,b2
   integer i4_huge,k,seed
@@ -74,6 +73,14 @@ contains
     seed=seed+i4_huge
   endif
   r4_uniform=b1+(b2-b1)*real(dble(seed)* 4.656612875D-10)
+  return
+ end function r4_uniform2
+
+ real function r4_uniform(b1,b2,seed)
+  implicit none
+  real,intent(in)    :: b1,b2
+  integer,intent(in) :: seed
+  r4_uniform = b1+(b2-b1)*iast_rand(seed,1)
   return
  end function r4_uniform
 
@@ -134,6 +141,59 @@ contains
   end function iast_rand
 end module
 
+module qsort_c_module
+! Recursive Fortran 95 quicksort routine sorts real numbers into ascending numerical order
+! Author: Juli Rew, SCD Consulting (juliana@ucar.edu), 9/03
+! Based on algorithm from Cormen et al., Introduction to Algorithms, 1997 printing
+! Made F conformant by Walt Brainerd
+ implicit none
+ public  :: QsortC
+ private :: Partition
+ contains
+ recursive subroutine QsortC(A)
+  real, intent(in out), dimension(:) :: A
+  integer                            :: iq
+  if(size(A) > 1) then
+     call Partition(A, iq)
+     call QsortC(A(:iq-1))
+     call QsortC(A(iq:))
+  endif
+ end subroutine QsortC
+ subroutine Partition(A, marker)
+  real, intent(in out), dimension(:) :: A
+  integer, intent(out)               :: marker
+  integer                            :: i, j
+  real                               :: temp
+  real                               :: x
+  x = A(1)
+  i= 0
+  j= size(A) + 1
+  do
+     j = j-1
+     do
+        if (A(j) <= x) exit
+        j = j-1
+     end do
+     i = i+1
+     do
+        if (A(i) >= x) exit
+        i = i+1
+     end do
+     if (i < j) then
+        temp = A(i)
+        A(i) = A(j)
+        A(j) = temp
+     elseif (i == j) then
+        marker = i+1
+        return
+     else
+        marker = i
+        return
+     endif
+  end do
+ end subroutine Partition
+end module qsort_c_module
+
 module gaiast_globals
  use mod_random
  implicit none
@@ -155,7 +215,6 @@ module gaiast_globals
  real                       :: inferior
  real                       :: superior
  contains
-
   subroutine read_input()
   implicit none
   read_input_do: do
@@ -381,8 +440,7 @@ module gaiast_globals
    case("langmuir_dualsite")
     model = a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
    case("langmuir_freundlich_dualsite")
-    model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2)) + &
-            a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
+    model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
    case("jensen")!f(x)=K1*x/(1+(K1*x/(alfa*(1+k2*x))**c))**(1/c)
     model = a(0)*xx/(1.0+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3)) 
    !model = a(0)*xx/(1+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3))
@@ -398,12 +456,13 @@ end module gaiast_globals
 module mod_genetic
  use mod_random
  use gaiast_globals
+ use qsort_c_module
  implicit none
  private
  public fit
  integer,parameter        :: ga_size     = 2**13 ! numero de cromosomas
  real,parameter           :: ga_mutationrate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
- real,parameter           :: ga_eliterate= 0.15, GA_DisasterRate = 0.0000001
+ real,parameter           :: ga_eliterate= 0.25, GA_DisasterRate = 0.0000001
  integer,parameter        :: ga_elitists = int( ga_size * ga_eliterate)
  type                     :: typ_ga
   character(len=32*maxnp) :: genotype
@@ -419,6 +478,7 @@ module mod_genetic
   type(typ_ga) function new_citizen(compound,seed)
    implicit none
    integer :: i,compound,seed
+   new_citizen%genotype = ' '
    do i = 1, 32*np(compound)
     new_citizen%genotype(i:i) = achar(randint(48,49,seed))
    end do
@@ -431,7 +491,7 @@ module mod_genetic
    new_citizen%fitness = fitness( new_citizen%phenotype,compound)
   end function new_citizen
 
-  subroutine UpdateCitizen( axolotl ,compound)
+  subroutine UpdateCitizen( axolotl ,compound )
    implicit none
    integer                     :: compound,i
    type(typ_ga), intent(inout) :: axolotl
@@ -445,19 +505,27 @@ module mod_genetic
   real function Fitness(phenotype,compound)
    implicit none
    real, intent(in)    :: phenotype(maxnp)
-   integer             :: i,compound
+   integer             :: i,compound,k = 0
    real                :: a(0:np(compound)-1),xx,yy
    character(len=100)  :: funk
+   logical             :: flagzero = .false.
+   real                :: infinite = HUGE(40843542)
    funk = ajuste(compound)
    do i = 0,np(compound)-1
     a(i) = phenotype(i+1)
+    !if (a(i) == 0.0) k=k+1
    end do
-   fitness = 0
+   !if(k==np(compound)) STOP
+   fitness = 0.0
    do i = 1, npress(compound)
     xx = datas(1,compound,i)
     yy = datas(2,compound,i)
     fitness = fitness + 0.5*( yy - model(a,np(compound),xx,funk) )**2
    end do
+   !if( fitness == 0.0 ) fitness = infinite
+   !else
+   ! fitness = infinite
+   !end if
    return
   end function Fitness
 
@@ -467,15 +535,16 @@ module mod_genetic
    character(len=100)             :: fmt_
    character(len=32*np(compound)) :: wnowaste
    real                           :: wnowasteparam(1:32*np(compound)),wfitness,kkk
-   do i=1,32*np(compound)
-    wnowaste(i:i)='#'
-   end do
+   !do i=1,32*np(compound)
+   ! wnowaste(i:i)=' '
+   !end do
    ! ...
-   wnowaste(1:32*np(compound))=parents(k)%genotype(1:32*np(compound))
-   ! ...
-   do i=1,np(compound)
-    wnowasteparam(i)=parents(k)%phenotype(i)
-   end do
+   !wnowaste(1:32*np(compound))=parents(k)%genotype(1:32*np(compound))
+   wnowaste = parents(k)%genotype
+   wnowasteparam = parents(k)%phenotype
+   !do i=1,np(compound)
+   ! wnowasteparam(i)=parents(k)%phenotype(i)
+   !end do
    wfitness = parents(k)%fitness
    write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f20.10,1x,f20.10)')compound,kk,wnowaste(1:32),wnowasteparam(1),wfitness,kkk
    do i=2,np(compound)
@@ -501,14 +570,15 @@ module mod_genetic
   end subroutine piksrt
 
   subroutine SortByFitness()
-   type(typ_ga)             ::  sorted(ga_size)
+   type(typ_ga)             ::  sorted(1:ga_size)
    integer                  ::  k,i
-   real                     ::  ftnss(ga_size)
+   real                     ::  ftnss(1:ga_size)
    do k=1,ga_size
     ftnss(k)=parents(k)%fitness
     if(isnan(parents(k)%fitness)) ftnss(k) = 9999999999.99
    end do
-   call PIKSRT(ga_size,ftnss)
+   !call PIKSRT(ga_size,ftnss)
+   call QsortC( ftnss )
    exter:do k=1,ga_size
     inter:do i=1,ga_size
     if( parents(i)%fitness== ftnss(k))then
@@ -615,7 +685,8 @@ module mod_genetic
     else if ( rrr >= GA_MutationRate .and. rrr <= GA_MutationRate + GA_DisasterRate ) then
      call NuclearDisaster(Compound)
     end if
-    ! Update:
+   end do
+   do i = 1, ga_size
     call UpdateCitizen(children(i),compound)
    end do
   end subroutine Mate
