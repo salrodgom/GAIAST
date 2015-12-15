@@ -11,15 +11,15 @@
 # dubinin_raduschkevich:        a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
 # dubinin_astakhov              a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
 ncomp 2
-1.0 langmuir_freundlich_dualsite
+10.0 langmuir_freundlich_dualsite
 1.0 langmuir_freundlich_dualsite
 # inter: numero de presiones que van a tener las isotermas  de la mezcla
 inter 2048
 # ffit? : valor logico, por defecto .true. :  
 # .true. se procede al ajuste de las isotermas, .false. > Los parametros se toman en un loop que se abre en las lineas siguientes, a linea por componente
-ffit? .true.
-#6.26591444  0.336124897     1851124.88   7.94526875E-11
-#5.76275444  7.58524984E-02  1.04496074
+ffit? .false.
+4.07758176E+11   1.69710415E-12  0.213416800       6.56248140       3.05175745E-05   2.43750024    
+4.12315451E+11   1.81898886E-12  0.187500209       6.50004244       4.39457968E-03   2.00000000
 # Fire? es para realizar ajustes rapidos (por defecto .false.), no use esto de forma formal.
 # Puede ser valido para isotermas, muy dispares en forma y presiones.
 # Se marca una parada para el ajuste en el fitness, con una tolerancia marcada por el real de la siguiente linea
@@ -27,4 +27,4 @@ Fire? .false.
 # temperatura, por defecto 298 K, para aquellos modelos que la necesitan: dubinin_raduschkevich
 temp  298.0
 # tol, tolerancia del IAST para considerar que la presion parcial de los componentes esta igualada, por defecto 0.001
-tol   0.0001
+tol   0.001
