@@ -54,7 +54,7 @@ contains
   randint=int(r4_uniform(a,b+1.0,seed))
  end function randint
 
- REAL function r4_uniform(b1,b2,seed)
+ real function r4_uniform(b1,b2,seed)
   implicit none
   real b1,b2
   integer i4_huge,k,seed
@@ -75,62 +75,6 @@ contains
   r4_uniform=b1+(b2-b1)*real(dble(seed)* 4.656612875D-10)
   return
  end function r4_uniform
-
- real function iast_rand(iseed,imode)
-!  imode = 1 => random number between 0 and 1
-!        = 2 => random number between -1 and 1
-  implicit none
-  integer  :: iseed
-  integer  :: imode
-  integer       :: i
-  integer, save :: ia1 = 625
-  integer, save :: ia2 = 1741
-  integer, save :: ia3 = 1541
-  integer, save :: ic1 = 6571
-  integer, save :: ic2 = 2731
-  integer, save :: ic3 = 2957
-  integer, save :: ix1
-  integer, save :: ix2
-  integer, save :: ix3
-  integer       :: j
-  integer, save :: m1  = 31104
-  integer, save :: m2  = 12960
-  integer, save :: m3  = 14000
-  real          :: rm1
-  real          :: rm2
-  real,    save :: rr(97)
-!
-  rm1 = 1.0/m1
-  rm2 = 1.0/m2
-  if (iseed.lt.0) then
-    ix1 = mod(ic1 - iseed,m1)
-    ix1 = mod(ia1*ix1 + ic1,m1)
-    ix2 = mod(ix1,m2)
-    ix1 = mod(ia1*ix1 + ic1,m1)
-    ix3 = mod(ix1,m3)
-    do i = 1,97
-      ix1 = mod(ia1*ix1 + ic1,m1)
-      ix2 = mod(ia2*ix2 + ic2,m2)
-      rr(i) = (float(ix1) + float(ix2)*rm2)*rm1
-    enddo
-    iseed = abs(iseed)
-  endif
-  ix3 = mod(ia3*ix3 + ic3,m3)
-  j = 1 + (97*ix3)/m3
-  if (j.gt.97.or.j.lt.1) then
-    write(6,*)'array bounds exceeded in IAST_random'
-    stop 'iast_random'
-  endif
-  if ( imode == 1 ) then
-    iast_rand = rr(j)
-  else
-    iast_rand = 2.0*rr(j) - 1.0
-  endif
-  ix1 = mod(ia1*ix1 + ic1,m1)
-  ix2 = mod(ia2*ix2 + ic2,m2)
-  rr(j) = (float(ix1) + float(ix2)*rm2)*rm1
-  return
-  end function iast_rand
 end module
 
 module qsort_c_module

@@ -5,8 +5,8 @@ file2=n2.txt
 # funciones
 function make_input_iast {
 echo "ncomp 2
-1.0 langmuir_freundlich_dualsite
-1.0 langmuir_freundlich_dualsite
+1.0 langmuir_dualsite
+1.0 langmuir_dualsite
 inter  2048
 ffit? .true." > input
 }
