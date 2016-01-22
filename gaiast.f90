@@ -250,8 +250,9 @@ module gaiast_globals
 
  subroutine IAST()
   implicit none
-  integer        :: i,j
-  real           :: comp,dx,presion1,presion2,concx1,concx2,p,n1,n2,n
+  integer        :: i,j,ijk
+  real           :: comp,dx,p,concx(ncomponents)
+  real           :: presion(ncomponents),n(0:ncomponents)
 
   dx = real((superior-inferior)/intervalos)
 
@@ -262,8 +263,15 @@ module gaiast_globals
     if (comp <= tol) then
      presion1 = 10**(inferior+i*dx)
      presion2 = 10**(inferior+j*dx)
+!{{
+! Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
+!}}
      concx1 = presion2*concy(1) / (concy(2)*presion1 + concy(1)*presion2)
      concx2 = 1.0 - concx1
+     do ijk = 1,ncomponents
+      concx(ijk) = 
+     end do
+     !
      p  = presion1*concx1/concy(1)
      n1 = iso(1,i)*concx1
      n2 = iso(2,j)*concx2
@@ -275,6 +283,43 @@ module gaiast_globals
   close(104)
   return
  end subroutine IAST
+
+ subroutine IAST_multicomponent()
+  implicit none
+  integer        :: i,j,ijk
+  real           :: comp,dx,p,concx(ncomponents)
+  real           :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
+  real           :: aux1,aux2
+  dx = real((superior-inferior)/intervalos)
+  i = 0
+  open(unit=104,file='adsorcion.dat')
+  ! Solve IAST for every pressure point
+  do while (i<=intervalos-1.and.validPressure)
+  ! {{
+    n(0) = 0.0
+    aux1=0 !Will be used to calculate the molar fraction of component 1
+    aux2=0 !Will be used to calculate the total loading
+    presion(0,i)=10**(inferior+i*dx)
+    
+    comp = abs(pi(1,i)-pi(2,j))
+    
+!{{
+! Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
+!}}
+     !
+     p  = presion1*concx1/concy(1)
+     n1 = iso(1,i)*concx1
+     n2 = iso(2,j)*concx2
+     n = n1 + n2
+     write(104,*)p,n1,n2,n,concy
+    end if
+
+  ! }}
+    i = i +1
+  end do
+  close(104)
+  return
+ end subroutine IAST_multicomponent
 
  real function integrate(x0,x1,integration_points,a,n,funk)
   implicit none
