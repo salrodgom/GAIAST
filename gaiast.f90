@@ -401,7 +401,8 @@ module gaiast_globals
 ! Calculate spreading pressure pi for P1
     !last    = lastPi(1)
     !piValue = CalculatePi(1,presion,i,last)
-    !presion(1,i)=10**(inferior+i*dx) ! <- P1
+    !piValue = last
+    presion(1,i)=10**(inferior+i*dx) ! <- P1
     piValue = pi( 1, i )
     validPressure=CalculatePressures(presion,i,lastPi,piValue)
     lastPi=piValue
@@ -503,8 +504,6 @@ module gaiast_globals
     p = presion(k,point-1)
     presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
    end if
-   !write(6,*)'PRESS',p,presion(k,point)
-   !if(presion(k,point)<1e-7.and.point>1) stop 'wtf!'
    deallocate(apar)
    !lastPi(k)=piValue
   end do
@@ -520,21 +519,6 @@ module gaiast_globals
 ! }}
   return
  end function CalculatePressures
-
- real function CalculatePressureIntegralPath(k,x0,a,n,funk,oldPi,piValue)
-  implicit none
-  integer, intent(in)      :: k,n
-  real,    intent(in)      :: a(0:n-1),x0,oldPi,piValue
-  character(100),intent(in):: funk
-  real                     :: delta = 0.0,aux1 = 0.0,x
-  !delta = 
-  x = 1.0
-  do while (oldPi + aux1 < piValue)
-   aux1 = aux1 + delta*model(a,n,x,funk)
-  end do
-  CalculatePressureIntegralPath = aux1
-  return
- end function CalculatePressureIntegralPath
 
  real function integrate(x0,x1,a,n,funk)
   implicit none
@@ -573,9 +557,9 @@ module gaiast_globals
    x=x0+delta*(0.5+i)
    integral = integral + delta*model(a,n,x,funk)/x
    i = i+1
-  !write(6,*)'[CalculatePressureIntegral]'
-  !write(6,*)'INT:',i,k,integral,oldPi,piValue,delta*model(a,n,x,funk)/x
   end do
+  write(6,*)'[CalculatePressureIntegral]',i,k,integral,oldPi,piValue,delta*model(a,n,x,funk)/x
+  write(6,*)'[ParametersModel]',a
   CalculatePressureIntegral = integral 
   return
  end function CalculatePressureIntegral
@@ -605,7 +589,7 @@ module gaiast_globals
    lastPi = lastPi + integrate(x0,x1,apar,n,funk)
   end if
   deallocate(apar)
-  CalculatePi = lastPi
+  !CalculatePi = lastPi
   return
  end function
 
