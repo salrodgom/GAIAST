@@ -15,8 +15,11 @@ set logscale x
 set yrange [0:]
 plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'C_1',\
      'isoterma2.dat' w p pt 6 lc rgb 'green' t 'C_2',\
+     'isoterma3.dat' w p pt 6 lc rgb 'blue' t 'C_3',\
      'curves.txt' u 1:2 w l lt 1 lc rgb 'red'   notitle,\
-     'curves.txt' u 4:5 w l lt 1 lc rgb 'green' notitle
+     'curves.txt' u 4:5 w l lt 1 lc rgb 'green' notitle,\
+     'curves.txt' u 7:8 w l lt 1 lc rgb 'blue' notitle
 plot 'adsorcion.dat' u 1:2 w p pt 7 ps 0.5 lt 1 lc rgb 'red' t 'C_1',\
-     'adsorcion.dat' u 1:3 w p pt 7 ps 0.5 lt 1 lc rgb 'green' t 'C_2'
+     'adsorcion.dat' u 1:3 w p pt 7 ps 0.5 lt 1 lc rgb 'green' t 'C_2',\
+     'adsorcion.dat' u 1:4 w p pt 7 ps 0.5 lt 1 lc rgb 'blue' t 'C_3'
 unset multiplot

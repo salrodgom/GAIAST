@@ -77,6 +77,65 @@ contains
  end function r4_uniform
 end module
 
+module newton
+    implicit none
+    integer, parameter      :: maxiter = 20
+    real(kind=8), parameter :: tol = 1.d-14
+contains
+subroutine solve(f, fp, x0, x, iters, debug)
+    ! Estimate the zero of f(x) using Newton's method. 
+    ! Input:
+    !   f:  the function to find a root of
+    !   fp: function returning the derivative f'
+    !   x0: the initial guess
+    !   debug: logical, prints iterations if debug=.true.
+    ! Returns:
+    !   the estimate x satisfying f(x)=0 (assumes Newton converged!) 
+    !   the number of iterations iters
+    implicit none
+    real(kind=8), intent(in)    :: x0
+    real(kind=8), external      :: f, fp
+    logical, intent(in)         :: debug
+    real(kind=8), intent(out)   :: x
+    integer, intent(out)        :: iters
+    ! Declare any local variables:
+    real(kind=8)                :: deltax, fx, fxprime
+    integer                     :: k
+    ! initial guess
+    x = x0
+    if (debug) then
+        print 11, x
+ 11     format('Initial guess: x = ', e22.15)
+        endif
+    ! Newton iteration to find a zero of f(x) 
+    do k=1,maxiter
+        ! evaluate function and its derivative:
+        fx = f(x)
+        fxprime = fp(x)
+        if (abs(fx) < tol) then
+            exit  ! jump out of do loop
+            endif
+        ! compute Newton increment x:
+        deltax = fx/fxprime
+        ! update x:
+        x = x - deltax
+        if (debug) then
+            print 12, k,x
+ 12         format('After', i3, ' iterations, x = ', e22.15)
+            endif
+        enddo
+    if (k > maxiter) then
+        ! might not have converged
+        fx = f(x)
+        if (abs(fx) > tol) then
+            print *, '*** Warning: has not yet converged'
+            endif
+        endif 
+    ! number of iterations taken:
+    iters = k-1
+end subroutine solve
+end module newton
+
 module qsort_c_module
 ! Recursive Fortran 95 quicksort routine sorts real numbers into ascending numerical order
 ! Author: Juli Rew, SCD Consulting (juliana@ucar.edu), 9/03
@@ -136,6 +195,7 @@ module gaiast_globals
  integer                    :: npar,ncomponents,i,seed
  integer,allocatable        :: np(:)
  integer                    :: err_apertura,ii,intervalos,j
+ integer                    :: integration_points = 1000000
  real                       :: tol = 0.001, tolfire = 0.25
  real,allocatable           :: param(:,:),concy(:),pi(:,:),iso(:,:)
  integer,allocatable        :: npress(:)
@@ -177,7 +237,6 @@ module gaiast_globals
     if(flag.eqv..false.)then
      write(6,*)'Fit is already done'
      readparameter: do ii=1,ncomponents
-      if(ncomponents>=3) stop "[ERROR] Uh Oh: you're screwed"
       read(5,*)(param(ii,j),j=0,np(ii)-1)
      end do readparameter
     end if
@@ -248,83 +307,239 @@ module gaiast_globals
   return
  end subroutine bounds
 
- subroutine IAST()
+ subroutine IAST_binary()
   implicit none
-  integer        :: i,j,ijk
-  real           :: comp,dx,p,concx(ncomponents)
+  integer        :: i,j,k,ijk
+  real           :: comp1,comp2,dx,p,concx(ncomponents),aux1,aux2
   real           :: presion(ncomponents),n(0:ncomponents)
-
   dx = real((superior-inferior)/intervalos)
-
   open(unit=104,file='adsorcion.dat')
+  !if(ncomponents<3)then
   do i=0,intervalos-1
    do j=0,intervalos-1
-    comp = abs(pi(1,i)-pi(2,j))
-    if (comp <= tol) then
-     presion1 = 10**(inferior+i*dx)
-     presion2 = 10**(inferior+j*dx)
+    comp1 = abs(pi(1,i)-pi(2,j))
+    if (comp1 <= tol) then
+     presion(1) = 10**(inferior+i*dx)
+     presion(2) = 10**(inferior+j*dx)
 !{{
-! Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
+! Calculate molar fraction of component 1 at spread pressure Pi
+! from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
 !}}
-     concx1 = presion2*concy(1) / (concy(2)*presion1 + concy(1)*presion2)
-     concx2 = 1.0 - concx1
-     do ijk = 1,ncomponents
-      concx(ijk) = 
-     end do
-     !
-     p  = presion1*concx1/concy(1)
-     n1 = iso(1,i)*concx1
-     n2 = iso(2,j)*concx2
-     n = n1 + n2
-     write(104,*)p,n1,n2,n,concy
+     concx(1) = presion(2)*concy(1) / (concy(2)*presion(1) + concy(1)*presion(2))
+     concx(2) = 1.0 - concx(1)
+     p  = presion(1)*concx(1)/concy(1)
+     n(1) = iso(1,i)*concx(1)
+     n(2) = iso(2,j)*concx(2)
+     n(0) = n(1) + n(2)
+     write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0)
     end if
    end do
   end do
+ ! else
+ ! do i=0,intervalos-1
+ !  do j=0,intervalos-1
+ !   comp1 = abs(pi(1,i)-pi(2,j))
+ !   if (comp1 <= tol) then
+ !    do k=0,intervalos-1
+ !     aux1=0
+ !     comp1 = abs(pi(2,i)-pi(3,j))
+ !     comp2 = abs(pi(1,i)-pi(3,j))
+ !     if (comp2 <= tol .and. comp1 <= tol) then
+ !      presion(1) = 10**(inferior+i*dx)
+ !      presion(2) = 10**(inferior+j*dx)
+ !      presion(3) = 10**(inferior+k*dx)
+ !      !
+ !      do ijk=2,3
+ !       if (presion(ijk) /= 0.0) aux1=aux1+presion(1)*concy(ijk)/(presion(ijk)*concy(1))
+ !      end do
+ !      if (aux1/=0.0) then
+ !       concx(1) = 1.0/(1+aux1)
+ !      else
+ !       concx(1) = 0.0
+ !      end if  
+ !      ! Calculate the molar fraction of the different components
+ !      do ijk=2,3
+ !       if (presion(ijk)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk)
+ !      end do
+ !      p  = presion(1)*concx(1)/concy(1)
+ !      n(1) = iso(1,i)*concx(1)
+ !      n(2) = iso(2,i)*concx(2)
+ !      n(3) = iso(3,i)*concx(3)
+ !      write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0)
+ !     end if
+ !    end do
+ !   end if
+ !  end do
+ ! end do 
+ ! end if
   close(104)
   return
- end subroutine IAST
+ end subroutine IAST_binary
 
  subroutine IAST_multicomponent()
   implicit none
-  integer        :: i,j,ijk
-  real           :: comp,dx,p,concx(ncomponents)
+  integer          :: i,j,ijk,nn
+  real,allocatable :: a(:)
+  character(100)   :: funk
+  real           :: comp,dx,p,concx(ncomponents),pureloading(ncomponents)
   real           :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
-  real           :: aux1,aux2
+  real           :: auxP,aux1,aux2,lastPi(ncomponents),piValue=0.0,x,last=0.0
+  logical        :: validPressure = .true., yIsZero = .true.,flag = .true.
   dx = real((superior-inferior)/intervalos)
-  i = 0
+  i = 1
+  lastPi = 0.0
+  presion = 0.0
   open(unit=104,file='adsorcion.dat')
   ! Solve IAST for every pressure point
-  do while (i<=intervalos-1.and.validPressure)
-  ! {{
-    n(0) = 0.0
-    aux1=0 !Will be used to calculate the molar fraction of component 1
-    aux2=0 !Will be used to calculate the total loading
-    presion(0,i)=10**(inferior+i*dx)
-    
-    comp = abs(pi(1,i)-pi(2,j))
-    
-!{{
-! Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
-!}}
-     !
-     p  = presion1*concx1/concy(1)
-     n1 = iso(1,i)*concx1
-     n2 = iso(2,j)*concx2
-     n = n1 + n2
-     write(104,*)p,n1,n2,n,concy
+  ScanPressures: do while (i<=intervalos-1)
+! {{ initialisation:
+    n    = 0.0
+    aux1 = 0 !Will be used to calculate the molar fraction of component 1
+    aux2 = 0 !Will be used to calculate the total loading
+    auxP = datas(1,1,npress(1))
+    presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
+! Calculate spreading pressure pi for P1
+    !last    = lastPi(1)
+    !piValue = CalculatePi(1,presion,i,last)
+    !presion(1,i)=10**(inferior+i*dx) ! <- P1
+    piValue = pi( 1, i )
+    validPressure=CalculatePressures(presion,i,lastPi,piValue)
+    lastPi=piValue
+    if(validPressure.and.i>0)then
+     !write(6,*)'Pi:',(lastPi(ijk),ijk=1,ncomponents),'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
+     continue
+    else
+     i=i+1
+     cycle ScanPressures
     end if
-
-  ! }}
+! }}
+! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
+    do ijk=2,ncomponents
+     if (presion(ijk,i) /= 0.0) aux1=aux1+presion(1,i)*concy(ijk)/(presion(ijk,i)*concy(1))
+    end do 
+! Case where there is not a Pressure i that makes Pi of component i = Pi of component 1: aux1 is zero by initialization
+    if (aux1/=0.0) then
+     concx(1) = 1.0/(1+aux1)
+    else
+     concx(1) = 0.0
+    end if
+! Special case when all y are zero apart from component 1
+    yIsZero = .true.
+    do ijk=2,ncomponents
+     if (concy(ijk)/=0.0) yIsZero =.false.
+    end do
+    if (yIsZero) concx(1) = 1.0
+! }}
+!! {{ Partial Pressure from component 1:     <-------------------------------- X
+!    p = presion(1,i)
+    p = presion(1,i)*concx(1)/concy(1)
+!! Calculate the molar fraction of the different components
+    do ijk=2,ncomponents
+     if (presion(ijk,i)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk,i)
+    end do
+    write(6,*)( concx(ijk), ijk=1,3)
+    !if(i>2)STOP
+! Calculate the total loading
+! In the case where there is not a Pressure i that makes Pi of component i = Pi of component 1: all loadings are zero
+! and aux2 is zero by initialization, so total loading will be zero
+    flag=.true.
+    do ijk=1,ncomponents
+!   Calculate pure loading:
+     funk = ajuste(ijk)
+     nn = np(ijk)
+     allocate(a(0:nn-1))
+     a = 0.0
+     do j = 0, nn-1
+      a(j) = param(ijk,j)
+     end do
+     x = presion(ijk,i)
+     pureloading(ijk) = model(a,nn,x,funk)
+     deallocate(a)
+     if(pureloading(ijk)==0.0) flag=.false.
+    end do
+    if(flag)then
+     do ijk=1,ncomponents
+      if(pureloading(ijk)/=0.0)aux2=aux2+concx(ijk)/pureloading(ijk)
+     end do
+    else
+     aux2 = 0.0
+    end if
+    if (aux2/=0.0) n(0) = 1.0/aux2
+! Finally, calculate the loadings of the different components in the mixture
+    do ijk=1,ncomponents ! Correct
+     n(ijk) = pureloading(ijk) * concx(ijk)
+    end do 
+    write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0),(pureloading(ijk),ijk=1,ncomponents)
+  ! }}                                     <------------------------------------------------------------- X
     i = i +1
-  end do
+  end do ScanPressures
   close(104)
   return
  end subroutine IAST_multicomponent
 
- real function integrate(x0,x1,integration_points,a,n,funk)
+ logical function CalculatePressures(presion,point,lastPi,piValue)
+  implicit none
+  integer,intent(in) :: point
+  real,intent(out)   :: presion(0:ncomponents,0:intervalos-1),piValue
+  real,intent(inout) :: lastPi(ncomponents)
+  real               :: oldPi, p
+  integer            :: k,j,n
+  real,allocatable   :: apar(:)
+  character(100)     :: funk
+  do k=2,ncomponents
+   presion(k,point) = 0.0
+   oldPi = lastPi(k)
+   funk = ajuste( k )
+   n = np(k)
+   allocate(apar(0:n-1))
+   apar = 0.0
+   do j = 0, n-1
+    apar(j) = param(k,j)
+   end do
+   if (point==0) then
+    p = 0.0
+    presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+   else
+    p = presion(k,point-1)
+    presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+   end if
+   !write(6,*)'PRESS',p,presion(k,point)
+   !if(presion(k,point)<1e-7.and.point>1) stop 'wtf!'
+   deallocate(apar)
+   !lastPi(k)=piValue
+  end do
+! {{ 
+  if ( point > 0  .and. presion(k,point) < presion(k,point-1)) then
+   do j=1,ncomponents
+    presion(j,point) = 0.0
+   end do
+   CalculatePressures = .false.
+  else
+   CalculatePressures = .true.
+  end if
+! }}
+  return
+ end function CalculatePressures
+
+ real function CalculatePressureIntegralPath(k,x0,a,n,funk,oldPi,piValue)
+  implicit none
+  integer, intent(in)      :: k,n
+  real,    intent(in)      :: a(0:n-1),x0,oldPi,piValue
+  character(100),intent(in):: funk
+  real                     :: delta = 0.0,aux1 = 0.0,x
+  !delta = 
+  x = 1.0
+  do while (oldPi + aux1 < piValue)
+   aux1 = aux1 + delta*model(a,n,x,funk)
+  end do
+  CalculatePressureIntegralPath = aux1
+  return
+ end function CalculatePressureIntegralPath
+
+ real function integrate(x0,x1,a,n,funk)
   implicit none
   integer              ::  i
-  integer,intent(in)   ::  n,integration_points
+  integer,intent(in)   ::  n
   real                 ::  delta,x
   real,intent(in)      ::  x0,x1
   real                 ::  factor
@@ -341,6 +556,58 @@ module gaiast_globals
   end do area
   return
  end function integrate
+
+ real function CalculatePressureIntegral(k,x0,a,n,funk,oldPi,piValue)
+  implicit none
+  integer,intent(in)       :: k,n
+  integer                  :: i = 0
+  real                     :: x = 0.0, delta, integral = 0.0
+  real,intent(in)          :: a(0:n-1), x0,oldPi,piValue
+  character(100),intent(in):: funk
+  if ( x0 == 0.0 ) then
+   delta = 1.0/real(integration_points)
+  else
+   delta = x0/(integration_points+x0)
+  end if
+  do while ( oldPi+integral < piValue )
+   x=x0+delta*(0.5+i)
+   integral = integral + delta*model(a,n,x,funk)/x
+   i = i+1
+  !write(6,*)'[CalculatePressureIntegral]'
+  !write(6,*)'INT:',i,k,integral,oldPi,piValue,delta*model(a,n,x,funk)/x
+  end do
+  CalculatePressureIntegral = integral 
+  return
+ end function CalculatePressureIntegral
+
+ real function CalculatePi(k,presion,i,lastPi)
+  implicit none
+  integer,intent(in) :: i,k
+  real,intent(inout) :: lastPi
+  integer            :: n
+  real,allocatable   :: apar(:)
+  real               :: x0,x1,presion(0:ncomponents,0:intervalos-1)
+  character(100)     :: funk
+  funk = ajuste(k)
+  n = np(k)
+  allocate(apar(0:n-1))
+  apar = 0.0
+  do j = 0, n-1
+   apar(j) = param(k,j)
+  end do
+  if ( i==0 ) then
+   x0=0.0
+   x1=presion(k,i)
+   lastPi = lastPi + integrate(x0,x1,apar,n,funk)
+  else
+   x0=presion(k,i-1)
+   x1=presion(k,i)
+   lastPi = lastPi + integrate(x0,x1,apar,n,funk)
+  end if
+  deallocate(apar)
+  CalculatePi = lastPi
+  return
+ end function
 
  subroutine ReadIsotherms()
  implicit none
@@ -763,7 +1030,6 @@ module mod_genetic
    write(111,*)'#','Fitness:',fit0,'Biodiversity:',eps
    return
   end subroutine fit 
-  
 end module mod_genetic
 
 program main
@@ -782,7 +1048,11 @@ program main
   end do
  end if
  call bounds()
- call IAST()
+ if(ncomponents>2)then
+   call IAST_multicomponent()
+ else
+   call IAST_binary()
+ end if
  close(111)
- stop 'Hu ohgc!! SSSssss' 
+ stop 
 end program main
