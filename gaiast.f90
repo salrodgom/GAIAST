@@ -195,7 +195,8 @@ module gaiast_globals
  integer                    :: npar,ncomponents,i,seed
  integer,allocatable        :: np(:)
  integer                    :: err_apertura,ii,intervalos,j
- integer                    :: integration_points = 1000000
+ integer,parameter          :: integration_points = 1000000
+ real,parameter             :: precision_Newton = 1e-5
  real                       :: tol = 0.001, tolfire = 0.25
  real,allocatable           :: param(:,:),concy(:),pi(:,:),iso(:,:)
  integer,allocatable        :: npress(:)
@@ -314,7 +315,6 @@ module gaiast_globals
   real           :: presion(ncomponents),n(0:ncomponents)
   dx = real((superior-inferior)/intervalos)
   open(unit=104,file='adsorcion.dat')
-  !if(ncomponents<3)then
   do i=0,intervalos-1
    do j=0,intervalos-1
     comp1 = abs(pi(1,i)-pi(2,j))
@@ -335,43 +335,6 @@ module gaiast_globals
     end if
    end do
   end do
- ! else
- ! do i=0,intervalos-1
- !  do j=0,intervalos-1
- !   comp1 = abs(pi(1,i)-pi(2,j))
- !   if (comp1 <= tol) then
- !    do k=0,intervalos-1
- !     aux1=0
- !     comp1 = abs(pi(2,i)-pi(3,j))
- !     comp2 = abs(pi(1,i)-pi(3,j))
- !     if (comp2 <= tol .and. comp1 <= tol) then
- !      presion(1) = 10**(inferior+i*dx)
- !      presion(2) = 10**(inferior+j*dx)
- !      presion(3) = 10**(inferior+k*dx)
- !      !
- !      do ijk=2,3
- !       if (presion(ijk) /= 0.0) aux1=aux1+presion(1)*concy(ijk)/(presion(ijk)*concy(1))
- !      end do
- !      if (aux1/=0.0) then
- !       concx(1) = 1.0/(1+aux1)
- !      else
- !       concx(1) = 0.0
- !      end if  
- !      ! Calculate the molar fraction of the different components
- !      do ijk=2,3
- !       if (presion(ijk)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk)
- !      end do
- !      p  = presion(1)*concx(1)/concy(1)
- !      n(1) = iso(1,i)*concx(1)
- !      n(2) = iso(2,i)*concx(2)
- !      n(3) = iso(3,i)*concx(3)
- !      write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0)
- !     end if
- !    end do
- !   end if
- !  end do
- ! end do 
- ! end if
   close(104)
   return
  end subroutine IAST_binary
@@ -402,12 +365,12 @@ module gaiast_globals
     !last    = lastPi(1)
     !piValue = CalculatePi(1,presion,i,last)
     !piValue = last
-    presion(1,i)=10**(inferior+i*dx) ! <- P1
+    !presion(1,i)=10**(inferior+i*dx) ! <- P1
     piValue = pi( 1, i )
     validPressure=CalculatePressures(presion,i,lastPi,piValue)
     lastPi=piValue
     if(validPressure.and.i>0)then
-     write(6,*)'Pi:',(lastPi(ijk),ijk=1,ncomponents),'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
+     write(6,*)i,'Pi:',(lastPi(ijk),ijk=1,ncomponents),'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
      continue
     else
      i=i+1
@@ -438,7 +401,7 @@ module gaiast_globals
     do ijk=2,ncomponents
      if (presion(ijk,i)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk,i)
     end do
-    write(6,*)( concx(ijk), ijk=1,3)
+    !write(6,*)( concx(ijk), ijk=1,3)
     !if(i>2)STOP
 ! Calculate the total loading
 ! In the case where there is not a Pressure i that makes Pi of component i = Pi of component 1: all loadings are zero
@@ -481,44 +444,128 @@ module gaiast_globals
  logical function CalculatePressures(presion,point,lastPi,piValue)
   implicit none
   integer,intent(in) :: point
-  real,intent(out)   :: presion(0:ncomponents,0:intervalos-1),piValue
+  real,intent(inout) :: presion(0:ncomponents,0:intervalos-1),piValue
   real,intent(inout) :: lastPi(ncomponents)
   real               :: oldPi, p
   integer            :: k,j,n
   real,allocatable   :: apar(:)
-  character(100)     :: funk
-  do k=2,ncomponents
-   presion(k,point) = 0.0
-   oldPi = lastPi(k)
-   funk = ajuste( k )
-   n = np(k)
-   allocate(apar(0:n-1))
-   apar = 0.0
-   do j = 0, n-1
-    apar(j) = param(k,j)
-   end do
-   if (point==0) then
-    p = 0.0
-    presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+  character(100)     :: funk,mode='Newton'
+  CalculatePressures = .true.
+  k=2 
+  calc: do while (k<=ncomponents.and.CalculatePressures)
+   select case (mode)
+   case ('integral')
+    oldPi = lastPi(k)
+    funk = ajuste( k )
+    n = np(k)
+    allocate(apar(0:n-1))
+    apar = 0.0
+    do j = 0, n-1
+     apar(j) = param(k,j)
+    end do
+    if (point==0) then
+     p = 0.0
+     presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+    else
+     p = presion(k,point-1)
+     presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+    end if
+    deallocate(apar)
+   case default
+    presion(k,point) = CalculatePressureLinear(k,piValue)
+   end select
+! {{ Case where there is not a Pressure that makes Pi of component i = Pi of component 1: then j=N_Inp_P[k]
+! All Pressures i are set to zero and we exit the loop of components at this pressure P1 
+   if ( p>0.and.presion(k,point) <= presion(k,point-1)) then
+    do j=1,ncomponents
+     presion(j,point) = 0.0
+    end do
+    CalculatePressures = .false.
+    cycle calc
    else
-    p = presion(k,point-1)
-    presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+    CalculatePressures = .true.
    end if
-   deallocate(apar)
-   !lastPi(k)=piValue
-  end do
-! {{ 
-  if ( point > 0  .and. presion(k,point) < presion(k,point-1)) then
-   do j=1,ncomponents
-    presion(j,point) = 0.0
-   end do
-   CalculatePressures = .false.
-  else
-   CalculatePressures = .true.
-  end if
+   k = k +1
+  end do calc
 ! }}
   return
  end function CalculatePressures
+
+! CalculatePressureLinear(piValue,isotherm[k],nPressures[k]);
+ real function CalculatePressureLinear(compound,piValue)
+  implicit none
+  integer        :: j,compound
+  logical        :: lastPass = .false.
+  real           :: piGuess=0.0,deltaPi = 0.0
+  real           :: piValue
+  CalculatePressureLinear = 0.0
+  do j=0,npress(compound)
+   if(j==0)then
+     deltaPi=datas(2,compound,j+1) ! isother(k,j+1,1)
+   else
+     deltaPi=(datas(2,compound,j+1)-datas(2,compound,j))+(datas(1,compound,j+1)*datas(2,compound,j) &
+            - datas(1,compound,j)*datas(2,compound,j+1))*log(datas(1,compound,j+1)/datas(1,compound,j))/&
+              (datas(1,compound,j+1)-datas(1,compound,j))
+   end if
+   if(piGuess+deltaPi>=piValue)then
+    if(j==0)then
+     CalculatePressureLinear=piValue*datas(1,compound,j+1)/datas(2,compound,j+1)
+    else
+     CalculatePressureLinear=SolveNewtonLinear(compound,piValue-piGuess,j)
+    end if
+    exit
+   else
+    piGuess=piGuess+deltaPi
+    if(j==npress(compound)-1) lastPass = .true.
+   end if 
+  end do
+  if(lastPass.and.piGuess<piValue) CalculatePressureLinear = 0.0
+  return
+ end function CalculatePressureLinear
+
+ real function SolveNewtonLinear(compound,piValue,n)
+  implicit none
+  integer,intent(in) :: compound,n
+  real,intent(in)    :: piValue
+  real               :: X,X0,Y
+  real               :: gradient
+  real               :: a,b,c
+  ! Calculate the coefficients of the fuction to find the zero
+  a=(datas(2,compound,n+1)-datas(2,compound,n))/(datas(1,compound,n+1)-datas(1,compound,n))
+  b=(datas(1,compound,n+1)*datas(2,compound,n)-datas(1,compound,n)*datas(2,compound,n+1))/ &
+    (datas(1,compound,n+1)-datas(1,compound,n))
+  c=-a*datas(1,compound,n)-b*log(datas(1,compound,n))-piValue
+  ! Start looking for a solution at the middle of the interval [P1,P2]
+  X=(datas(1,compound,n+1)+datas(1,compound,n))*0.5
+  ! Calculate the value of the function at point X
+  Y=a*X+b*log(X)+c
+  do while(abs(Y)>precision_newton)
+   ! Calculate the gradient in the point X
+   gradient = 0.0
+   gradient = a+b/X
+   if (gradient/=0) then
+    ! Calculate the equation of the tangent
+    X0 = Y-gradient*X
+    ! Calculate the 0 point of the tangent and make it our new X
+    X = -X0/gradient
+    ! Calculate the value of the function at point X
+    Y = a*X+b*log(X)+c
+   elseif (X > datas(1,compound,n+1)) then
+    X=X-precision_Newton
+   else
+    X=X+precision_Newton
+   end if 
+  end do
+  if(X<datas(1,compound,n).or.X>datas(1,compound,n+1)) then
+   write(6,*)"WARNING: A solution for the linear equation was not found between pressures",&
+              datas(1,compound,n),'and',datas(1,compound,n+1),"."
+   write(6,*)"No pressure will be considered in this interval"
+   SolveNewtonLinear = 0.0
+  else
+   SolveNewtonLinear = X
+  end if
+  return
+ end function SolveNewtonLinear
 
  real function integrate(x0,x1,a,n,funk)
   implicit none
@@ -558,8 +605,8 @@ module gaiast_globals
    integral = integral + delta*model(a,n,x,funk)/x
    i = i+1
   end do
-  write(6,*)'[CalculatePressureIntegral]',i,k,integral,oldPi,piValue,delta*model(a,n,x,funk)/x
-  write(6,*)'[ParametersModel]',a
+  write(6,*)'[CalculatePressureIntegral]',i,k,integral,oldPi,piValue,x0,delta
+  !write(6,*)'[ParametersModel]',a
   CalculatePressureIntegral = integral 
   return
  end function CalculatePressureIntegral
