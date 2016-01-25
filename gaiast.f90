@@ -360,25 +360,29 @@ module gaiast_globals
     aux1 = 0 !Will be used to calculate the molar fraction of component 1
     aux2 = 0 !Will be used to calculate the total loading
     auxP = datas(1,1,npress(1))
-    presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
 ! Calculate spreading pressure pi for P1
-    !last    = lastPi(1)
-    !piValue = CalculatePi(1,presion,i,last)
-    !piValue = last
+    ! {{ juanma:
+    presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
+    last    = lastPi(1)
+    piValue = CalculatePi(1,presion,i,last)
+    ! }}
+    ! {{ own:
     !presion(1,i)=10**(inferior+i*dx) ! <- P1
-    piValue = pi( 1, i )
+    !piValue = pi( 1, i )
+    ! }}
     validPressure=CalculatePressures(presion,i,lastPi,piValue)
-    lastPi=piValue
     if(validPressure.and.i>0)then
-     write(6,*)i,'Pi:',(lastPi(ijk),ijk=1,ncomponents),'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
+     !write(6,*)i,'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
      continue
     else
      i=i+1
+     !write(6,*)i,'Not Valid pressure',validPressure
      cycle ScanPressures
     end if
 ! }}
+    aux1 = 0.0
 ! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
-    do ijk=2,ncomponents
+    do ijk=1,ncomponents
      if (presion(ijk,i) /= 0.0) aux1=aux1+presion(1,i)*concy(ijk)/(presion(ijk,i)*concy(1))
     end do 
 ! Case where there is not a Pressure i that makes Pi of component i = Pi of component 1: aux1 is zero by initialization
@@ -395,14 +399,15 @@ module gaiast_globals
     if (yIsZero) concx(1) = 1.0
 ! }}
 !! {{ Partial Pressure from component 1:     <-------------------------------- X
-!    p = presion(1,i)
+    !p = presion(1,i)
     p = presion(1,i)*concx(1)/concy(1)
 !! Calculate the molar fraction of the different components
     do ijk=2,ncomponents
      if (presion(ijk,i)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk,i)
     end do
-    !write(6,*)( concx(ijk), ijk=1,3)
-    !if(i>2)STOP
+    !write(6,*)'X:',( concx(ijk), ijk=1,ncomponents)
+    !write(6,*)'Y:',( concy(ijk), ijk=1,ncomponents)
+    !write(6,*)'Po',( presion(ijk,i)*concx(ijk)/concy(ijk), ijk=1,ncomponents)
 ! Calculate the total loading
 ! In the case where there is not a Pressure i that makes Pi of component i = Pi of component 1: all loadings are zero
 ! and aux2 is zero by initialization, so total loading will be zero
@@ -433,7 +438,7 @@ module gaiast_globals
     do ijk=1,ncomponents ! Correct
      n(ijk) = pureloading(ijk) * concx(ijk)
     end do 
-    write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0),(pureloading(ijk),ijk=1,ncomponents)
+    write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0),(pureloading(ijk),ijk=1,ncomponents),i
   ! }}                                     <------------------------------------------------------------- X
     i = i +1
   end do ScanPressures
@@ -449,7 +454,7 @@ module gaiast_globals
   real               :: oldPi, p
   integer            :: k,j,n
   real,allocatable   :: apar(:)
-  character(100)     :: funk,mode='Newton'
+  character(100)     :: funk,mode= 'Newton' ! 'integral' <- Doesn't work
   CalculatePressures = .true.
   k=2 
   calc: do while (k<=ncomponents.and.CalculatePressures)
@@ -474,9 +479,10 @@ module gaiast_globals
    case default
     presion(k,point) = CalculatePressureLinear(k,piValue)
    end select
+   lastPi(k) = piValue
 ! {{ Case where there is not a Pressure that makes Pi of component i = Pi of component 1: then j=N_Inp_P[k]
 ! All Pressures i are set to zero and we exit the loop of components at this pressure P1 
-   if ( p>0.and.presion(k,point) <= presion(k,point-1)) then
+   if ( point>0.and.presion(k,point) < presion(k,point-1)) then
     do j=1,ncomponents
      presion(j,point) = 0.0
     end do
@@ -558,7 +564,7 @@ module gaiast_globals
   end do
   if(X<datas(1,compound,n).or.X>datas(1,compound,n+1)) then
    write(6,*)"WARNING: A solution for the linear equation was not found between pressures",&
-              datas(1,compound,n),'and',datas(1,compound,n+1),"."
+    datas(1,compound,n),'and',datas(1,compound,n+1),"."
    write(6,*)"No pressure will be considered in this interval"
    SolveNewtonLinear = 0.0
   else
@@ -613,12 +619,12 @@ module gaiast_globals
 
  real function CalculatePi(k,presion,i,lastPi)
   implicit none
-  integer,intent(in) :: i,k
-  real,intent(inout) :: lastPi
+  integer     :: i,k
+  real        :: lastPi
   integer            :: n
   real,allocatable   :: apar(:)
   real               :: x0,x1,presion(0:ncomponents,0:intervalos-1)
-  character(100)     :: funk
+  character(100)     :: funk,model
   funk = ajuste(k)
   n = np(k)
   allocate(apar(0:n-1))
@@ -626,17 +632,27 @@ module gaiast_globals
   do j = 0, n-1
    apar(j) = param(k,j)
   end do
-  if ( i==0 ) then
-   x0=0.0
-   x1=presion(k,i)
-   lastPi = lastPi + integrate(x0,x1,apar,n,funk)
-  else
-   x0=presion(k,i-1)
-   x1=presion(k,i)
-   lastPi = lastPi + integrate(x0,x1,apar,n,funk)
-  end if
+  model = ajuste(k)
+  select case (model)
+  case ('langmuir')
+   x1 = presion(k,i)
+   lastPi = apar(0)*log(1+apar(1)*x1)
+  case ('langmuir_dualsite')
+   x1 = presion(k,i)
+   lastPi = apar(0)*log(1+apar(1)*x1)+apar(2)*log(1+apar(3)*x1)
+  case default
+   if ( i==0 ) then
+    x0=0.0
+    x1=presion(k,i)
+    lastPi = lastPi + integrate(x0,x1,apar,n,funk)
+   else
+    x0=presion(k,i-1)
+    x1=presion(k,i)
+    lastPi = lastPi + integrate(x0,x1,apar,n,funk)
+   end if
+  end select
   deallocate(apar)
-  !CalculatePi = lastPi
+  CalculatePi = lastPi
   return
  end function
 

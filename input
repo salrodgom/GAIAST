@@ -15,7 +15,7 @@ ncomp 3
 1.0 langmuir_dualsite
 1.0 langmuir_dualsite
 # inter: numero de presiones que van a tener las isotermas  de la mezcla
-inter 4096
+inter 1024
 # ffit? : valor logico, por defecto .true. :  
 # .true. se procede al ajuste de las isotermas, .false. > Los parametros se toman en un loop que se abre en las lineas siguientes, a linea por componente
 ffit? .false.
