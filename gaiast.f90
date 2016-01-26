@@ -275,8 +275,11 @@ module gaiast_globals
    end do
   end do
 ! ...
-  superior = log10( superior )
-  inferior = log10( inferior )
+  write(6,*)'Inf:',inferior
+  write(6,*)'Sup:',superior
+! ...
+  superior = log( superior )
+  inferior = log( inferior )
   dx = real((superior-inferior)/real(intervalos))   ! log-space
 ! ...
   open(222,file='curves.txt')
@@ -289,11 +292,11 @@ module gaiast_globals
     do jb = 0, np(compound) - 1
      apar(jb) = param(compound,jb)
     end do
-    xxx(compound) = 10**( inferior + ib*dx )            ! real space
+    xxx(compound) = exp( inferior + ib*dx )            ! real space
     x0=xxx(compound)
     yyy(compound) = model(apar, np(compound), x0, funk )
 !   ...
-    y0 = 10**( inferior + (ib+1)*dx )
+    y0 = exp( inferior + (ib+1)*dx )
     x0 = model(apar, np(compound), y0, funk )
 !   ...
     x0 = (yyy(compound) + x0)*dx/2.0
@@ -319,8 +322,8 @@ module gaiast_globals
    do j=0,intervalos-1
     comp1 = abs(pi(1,i)-pi(2,j))
     if (comp1 <= tol) then
-     presion(1) = 10**(inferior+i*dx)
-     presion(2) = 10**(inferior+j*dx)
+     presion(1) = exp(inferior+i*dx)
+     presion(2) = exp(inferior+j*dx)
 !{{
 ! Calculate molar fraction of component 1 at spread pressure Pi
 ! from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
@@ -348,8 +351,8 @@ module gaiast_globals
   real           :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
   real           :: auxP,aux1,aux2,lastPi(ncomponents),piValue=0.0,x,last=0.0
   logical        :: validPressure = .true., yIsZero = .true.,flag = .true.
-  dx = real((superior-inferior)/intervalos)
-  i = 1
+  !dx = real((superior-inferior)/intervalos)
+  i = 0
   lastPi = 0.0
   presion = 0.0
   open(unit=104,file='adsorcion.dat')
@@ -367,18 +370,20 @@ module gaiast_globals
     piValue = CalculatePi(1,presion,i,last)
     ! }}
     ! {{ own:
-    !presion(1,i)=10**(inferior+i*dx) ! <- P1
+    !presion(1,i)=exp(inferior+i*dx) ! <- P1
     !piValue = pi( 1, i )
     ! }}
     validPressure=CalculatePressures(presion,i,lastPi,piValue)
     if(validPressure.and.i>0)then
-     !write(6,*)i,'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
+     write(6,*)i,'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
+     write(6,*)i,piValue,lastPi
      continue
     else
      i=i+1
      !write(6,*)i,'Not Valid pressure',validPressure
      cycle ScanPressures
     end if
+    !lastPi = piValue
 ! }}
     aux1 = 0.0
 ! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
@@ -405,9 +410,6 @@ module gaiast_globals
     do ijk=2,ncomponents
      if (presion(ijk,i)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk,i)
     end do
-    !write(6,*)'X:',( concx(ijk), ijk=1,ncomponents)
-    !write(6,*)'Y:',( concy(ijk), ijk=1,ncomponents)
-    !write(6,*)'Po',( presion(ijk,i)*concx(ijk)/concy(ijk), ijk=1,ncomponents)
 ! Calculate the total loading
 ! In the case where there is not a Pressure i that makes Pi of component i = Pi of component 1: all loadings are zero
 ! and aux2 is zero by initialization, so total loading will be zero
@@ -436,7 +438,7 @@ module gaiast_globals
     if (aux2/=0.0) n(0) = 1.0/aux2
 ! Finally, calculate the loadings of the different components in the mixture
     do ijk=1,ncomponents ! Correct
-     n(ijk) = pureloading(ijk) * concx(ijk)
+     n(ijk) = pureloading(ijk)*concx(ijk)
     end do 
     write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0),(pureloading(ijk),ijk=1,ncomponents),i
   ! }}                                     <------------------------------------------------------------- X
@@ -456,7 +458,7 @@ module gaiast_globals
   real,allocatable   :: apar(:)
   character(100)     :: funk,mode= 'Newton' ! 'integral' <- Doesn't work
   CalculatePressures = .true.
-  k=2 
+  k=1 
   calc: do while (k<=ncomponents.and.CalculatePressures)
    select case (mode)
    case ('integral')
