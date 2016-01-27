@@ -360,23 +360,14 @@ module gaiast_globals
   ScanPressures: do while (i<=intervalos-1)
 ! {{ initialisation:
     n    = 0.0
-    aux1 = 0 !Will be used to calculate the molar fraction of component 1
-    aux2 = 0 !Will be used to calculate the total loading
+    aux1 = 0
+    aux2 = 0
     auxP = datas(1,1,npress(1))
-! Calculate spreading pressure pi for P1
-    ! {{ juanma:
     presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
-    ! }}
-    ! {{ own:
-    !presion(1,i)=exp(inferior+i*dx) ! <- P1
-    !piValue = pi( 1, i )
-    ! }}
     validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG!
     if(validPressure.and.i>0)then
-     !write(6,*)'Press:',(presion(ijk,i),ijk=1,ncomponents),i
-     write(6,*)'Pi:',piValue,lastPi
      continue
     else
      i=i+1
@@ -403,18 +394,17 @@ module gaiast_globals
     end do
     if (yIsZero) concx(1) = 1.0
 ! }}
-!! {{ Partial Pressure from component 1:     <-------------------------------- X
-    !p = presion(1,i)
+!! {{ Partial Pressure from component 1:
     p = presion(1,i)*concx(1)/concy(1)
 !! Calculate the molar fraction of the different components
     do ijk=2,ncomponents
      if (presion(ijk,i)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk,i)
     end do
-    write(6,*)'X',(concx(ijk), ijk=1, ncomponents), sum(concx)
-    !write(6,*)'X/Y',(concx(ijk)/concy(ijk), ijk=1, ncomponents)
+! {{ renormalise X:
+    aux1 = sum( concx )
+    concx = concx / aux1
+! }}
 ! Calculate the total loading
-! In the case where there is not a Pressure i that makes Pi of component i = Pi of component 1: all loadings are zero
-! and aux2 is zero by initialization, so total loading will be zero
     flag=.true.
     do ijk=1,ncomponents
 !   Calculate pure loading:
@@ -438,12 +428,10 @@ module gaiast_globals
      aux2 = 0.0
     end if
     if (aux2/=0.0) n(0) = 1.0/aux2
-! Finally, calculate the loadings of the different components in the mixture
     do ijk=1,ncomponents ! Correct
      n(ijk) = pureloading(ijk)*concx(ijk)
     end do 
     write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0),(pureloading(ijk),ijk=1,ncomponents),i
-  ! }}                                     <------------------------------------------------------------- X
     i = i +1
   end do ScanPressures
   close(104)
@@ -615,13 +603,13 @@ module gaiast_globals
    x=x0+delta*(0.5+i)
    Integral = Integral + delta*model(a,n,x,funk)/x
    i = i+1
-   !if(oldPi + Integral >= piValue)then
-   !  write(6,*)'Integal greater than Pi'
-   !end if
+   if(oldPi + Integral >= piValue)then
+     write(6,*)'Integal greater than Pi'
+   end if
   end do
   CalculatePressureIntegral = x
-  !write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
-  !write(6,*)'[ParametersModel]',(a(i),i=0,n-1)
+  write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
+  write(6,*)'[ParametersModel]',(a(i),i=0,n-1)
   return
  end function CalculatePressureIntegral
 
