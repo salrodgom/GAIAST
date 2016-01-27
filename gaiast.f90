@@ -366,17 +366,17 @@ module gaiast_globals
 ! Calculate spreading pressure pi for P1
     ! {{ juanma:
     presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
-    last    = lastPi(1)
-    piValue = CalculatePi(1,presion,i,last)
+    last    = lastPi(1)                       !<---- works
+    piValue = CalculatePi(1,presion,i,last)   !<---- works
     ! }}
     ! {{ own:
     !presion(1,i)=exp(inferior+i*dx) ! <- P1
     !piValue = pi( 1, i )
     ! }}
-    validPressure=CalculatePressures(presion,i,lastPi,piValue)
+    validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG!
     if(validPressure.and.i>0)then
-     write(6,*)i,'Press:',(presion(ijk,i),ijk=1,ncomponents),validPressure
-     write(6,*)i,piValue,lastPi
+     !write(6,*)'Press:',(presion(ijk,i),ijk=1,ncomponents),i
+     write(6,*)'Pi:',piValue,lastPi
      continue
     else
      i=i+1
@@ -410,6 +410,8 @@ module gaiast_globals
     do ijk=2,ncomponents
      if (presion(ijk,i)/=0.0) concx(ijk)=(p*concy(ijk))/presion(ijk,i)
     end do
+    write(6,*)'X',(concx(ijk), ijk=1, ncomponents), sum(concx)
+    !write(6,*)'X/Y',(concx(ijk)/concy(ijk), ijk=1, ncomponents)
 ! Calculate the total loading
 ! In the case where there is not a Pressure i that makes Pi of component i = Pi of component 1: all loadings are zero
 ! and aux2 is zero by initialization, so total loading will be zero
@@ -456,7 +458,7 @@ module gaiast_globals
   real               :: oldPi, p
   integer            :: k,j,n
   real,allocatable   :: apar(:)
-  character(100)     :: funk,mode= 'Newton' ! 'integral' <- Doesn't work
+  character(100)     :: funk,mode= 'integral' ! 'Newton'
   CalculatePressures = .true.
   k=1 
   calc: do while (k<=ncomponents.and.CalculatePressures)
@@ -469,7 +471,7 @@ module gaiast_globals
     apar = 0.0
     do j = 0, n-1
      apar(j) = param(k,j)
-    end do
+    end do 
     if (point==0) then
      p = 0.0
      presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
@@ -482,8 +484,6 @@ module gaiast_globals
     presion(k,point) = CalculatePressureLinear(k,piValue)
    end select
    lastPi(k) = piValue
-! {{ Case where there is not a Pressure that makes Pi of component i = Pi of component 1: then j=N_Inp_P[k]
-! All Pressures i are set to zero and we exit the loop of components at this pressure P1 
    if ( point>0.and.presion(k,point) < presion(k,point-1)) then
     do j=1,ncomponents
      presion(j,point) = 0.0
@@ -600,22 +600,28 @@ module gaiast_globals
   implicit none
   integer,intent(in)       :: k,n
   integer                  :: i = 0
-  real                     :: x = 0.0, delta, integral = 0.0
+  real                     :: x, delta, integral
   real,intent(in)          :: a(0:n-1), x0,oldPi,piValue
   character(100),intent(in):: funk
+  integral = 0.0
+  x = 0.0
   if ( x0 == 0.0 ) then
    delta = 1.0/real(integration_points)
   else
    delta = x0/(integration_points+x0)
   end if
-  do while ( oldPi+integral < piValue )
+  do while ( oldPi+ integral < piValue )
+  ! Integrate by the paralelogram rule
    x=x0+delta*(0.5+i)
-   integral = integral + delta*model(a,n,x,funk)/x
+   Integral = Integral + delta*model(a,n,x,funk)/x
    i = i+1
+   !if(oldPi + Integral >= piValue)then
+   !  write(6,*)'Integal greater than Pi'
+   !end if
   end do
-  write(6,*)'[CalculatePressureIntegral]',i,k,integral,oldPi,piValue,x0,delta
-  !write(6,*)'[ParametersModel]',a
-  CalculatePressureIntegral = integral 
+  CalculatePressureIntegral = x
+  !write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
+  !write(6,*)'[ParametersModel]',(a(i),i=0,n-1)
   return
  end function CalculatePressureIntegral
 
