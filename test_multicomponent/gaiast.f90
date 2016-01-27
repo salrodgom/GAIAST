@@ -195,7 +195,7 @@ module gaiast_globals
  integer                    :: npar,ncomponents,i,seed
  integer,allocatable        :: np(:)
  integer                    :: err_apertura,ii,intervalos,j
- integer,parameter          :: integration_points = 100
+ integer,parameter          :: integration_points = 1000
  real,parameter             :: precision_Newton = 1e-5
  real                       :: tol = 0.001, tolfire = 0.25
  real,allocatable           :: param(:,:),concy(:),pi(:,:),iso(:,:)
@@ -324,12 +324,9 @@ module gaiast_globals
     if (comp1 <= tol) then
      presion(1) = exp(inferior+i*dx)
      presion(2) = exp(inferior+j*dx)
-!{{
-! Calculate molar fraction of component 1 at spread pressure Pi
-! from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
-!}}
+! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1 + w(o3) )
      concx(1) = presion(2)*concy(1) / (concy(2)*presion(1) + concy(1)*presion(2))
-     concx(2) = 1.0 - concx(1)
+     concx(2) = 1.0 - concx(1)   ! }}
      p  = presion(1)*concx(1)/concy(1)
      n(1) = iso(1,i)*concx(1)
      n(2) = iso(2,j)*concx(2)
@@ -351,7 +348,7 @@ module gaiast_globals
   real           :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
   real           :: auxP,aux1,aux2,lastPi(ncomponents),piValue=0.0,x,last=0.0
   logical        :: validPressure = .true., yIsZero = .true.,flag = .true.
-  !dx = real((superior-inferior)/intervalos)
+  dx = real((superior-inferior)/intervalos)
   i = 0
   lastPi = 0.0
   presion = 0.0
@@ -363,7 +360,8 @@ module gaiast_globals
     aux1 = 0
     aux2 = 0
     auxP = datas(1,1,npress(1))
-    presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
+    presion(1,i) = exp(inferior+i*dx)
+    !presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
     validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG!
@@ -429,7 +427,7 @@ module gaiast_globals
      aux2 = 0.0
     end if
     if (aux2/=0.0) n(0) = 1.0/aux2
-    do ijk=1,ncomponents ! Correct
+    do ijk=1,ncomponents 
      n(ijk) = pureloading(ijk)*concx(ijk)
     end do 
     write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0),(pureloading(ijk),ijk=1,ncomponents),i
@@ -444,16 +442,16 @@ module gaiast_globals
   integer,intent(in) :: point
   real,intent(inout) :: presion(0:ncomponents,0:intervalos-1),piValue
   real,intent(inout) :: lastPi(ncomponents)
-  real               :: oldPi, p
+  real               :: oldPi, p,a1,a2,b1,b2,c,a,p1,p2
   integer            :: k,j,n
   real,allocatable   :: apar(:)
   character(100)     :: funk,mode= 'integral' ! 'Newton'
   CalculatePressures = .true.
   k=1
   calc: do while (k<=ncomponents.and.CalculatePressures)
-! {{ 
+! {{ interpolation and parameters from k-compound
    funk = ajuste( k )
-   if(funk=='langmuir') mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
+   if(funk=='langmuir')mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
    n = np(k)
    allocate(apar(0:n-1))
    do j = 0, n-1
@@ -465,9 +463,18 @@ module gaiast_globals
      select case (funk)
       case ('langmuir')
       presion(k,point) = (exp(piValue/apar(0))-1/apar(1))
-      case('langmuir_dualsite')
-      presion(k,point)=(exp(piValue)-exp(apar(0))-exp(apar(2)))/ &
-       (apar(1)*exp(apar(0))+apar(3)*exp(apar(2)))
+      !case('langmuir_dualsite')
+      !! Taylor:
+      !a1=apar(0)
+      !b1=apar(1)
+      !a2=apar(2)
+      !b2=apar(3)
+      !c =piValue
+      !a = a1!0.5*(a1+a2) 
+      !p1 = (sqrt(4*b1*b2*c**(1.0/a)+b1**2-2*b1*b2+b2**2)-b1-b2)/(2*b1*b2)
+      !a = a2
+      !p2 = (sqrt(4*b1*b2*c**(1.0/a)+b1**2-2*b1*b2+b2**2)-b1-b2)/(2*b1*b2)
+      !presion(k,point) = abs((p1+p2)/2.0)
      end select 
     case ('integral')
     oldPi = lastPi(k)
@@ -602,30 +609,32 @@ module gaiast_globals
  real function CalculatePressureIntegral(k,x0,a,n,funk,oldPi,piValue)
   implicit none
   integer,intent(in)       :: k,n
-  integer                  :: i
+  integer                  :: i,imax
   real                     :: x, delta, integral
   real,intent(in)          :: a(0:n-1), x0,oldPi,piValue
   character(100),intent(in):: funk
   integral = 0.0
   x = 0.0 
   i = 0
+  imax = -10000000
   if ( x0 == 0.0 ) then
    delta = 1.0/real(integration_points)
   else
    delta = x0/(integration_points+x0)
   end if
-  do while ( oldPi+ integral < piValue )
+  pressint: do while ( oldPi+ integral <= piValue )
   ! Integrate by the paralelogram rule
    x=x0+delta*(0.5+i)
    Integral = Integral + delta*model(a,n,x,funk)/x
    i = i+1
-   !if(oldPi + Integral >= piValue)then
-   !  write(6,*)'Integal greater than Pi'
-   !end if
-  end do
+  !if(oldPi + Integral >= piValue)then
+  ! write(6,*)'Integal greater than Pi'
+  !end if
+   if (i==imax) exit pressint
+  end do pressint
   CalculatePressureIntegral = x
   write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
-  write(6,*)'[ParametersModel]',(a(i),i=0,n-1)
+  !write(6,*)'[ParametersModel]',(a(i),i=0,n-1)
   return
  end function CalculatePressureIntegral
 

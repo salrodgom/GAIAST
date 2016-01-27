@@ -351,18 +351,19 @@ module gaiast_globals
   real           :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
   real           :: auxP,aux1,aux2,lastPi(ncomponents),piValue=0.0,x,last=0.0
   logical        :: validPressure = .true., yIsZero = .true.,flag = .true.
-  !dx = real((superior-inferior)/intervalos)
+  dx = real((superior-inferior)/intervalos)
   i = 0
   lastPi = 0.0
   presion = 0.0
   open(unit=104,file='adsorcion.dat')
-  ! Solve IAST for every pressure point
+  write(6,*)'Solve IAST for every pressure point'
   ScanPressures: do while (i<=intervalos-1)
 ! {{ initialisation:
     n    = 0.0
     aux1 = 0
     aux2 = 0
     auxP = datas(1,1,npress(1))
+    !presion(1,i) = exp(inferior+i*dx)
     presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
