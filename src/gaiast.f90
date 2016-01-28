@@ -367,7 +367,7 @@ module gaiast_globals
     validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG!
     !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue,validPressure
     if(validPressure.and.i>0)then
-     write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
+     !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
      continue
     else
      i=i+1
@@ -633,7 +633,7 @@ module gaiast_globals
    if (i==imax) exit pressint
   end do pressint
   CalculatePressureIntegral = x
-  write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
+  !write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
   !write(6,*)'[ParametersModel]',(a(i),i=0,n-1)
   return
  end function CalculatePressureIntegral
@@ -705,7 +705,7 @@ module gaiast_globals
    read (456,'(A)',iostat=err_apertura) line
    if(err_apertura/=0) exit do1
    read(line,*)datas(1,ii,i),datas(2,ii,i)
-   write(6,*) datas(1,ii,i),datas(2,ii,i)
+   write(6,'(2f20.5)') datas(1,ii,i),datas(2,ii,i)
   end do do1
   close(456)
  end do nisothermpure1
