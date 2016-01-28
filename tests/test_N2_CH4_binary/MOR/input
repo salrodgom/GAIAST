@@ -1,0 +1,5 @@
+ncomp 2
+1.0 langmuir_dualsite
+1.0 langmuir_dualsite
+inter  2048
+ffit? .true.
