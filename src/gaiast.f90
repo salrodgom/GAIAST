@@ -715,7 +715,7 @@ module gaiast_globals
   do1: do i = 1,npress(ii)
    read (456,'(A)',iostat=err_apertura) line
    if(err_apertura/=0) exit do1
-   read(line,'(2f20.5)')datas(1,ii,i),datas(2,ii,i)
+   read(line,*)datas(1,ii,i),datas(2,ii,i)
    write(6,'(2f20.5)') datas(1,ii,i),datas(2,ii,i)
   end do do1
   close(456)
