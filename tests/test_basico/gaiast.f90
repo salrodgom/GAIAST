@@ -195,7 +195,7 @@ module gaiast_globals
  integer                    :: npar,ncomponents,i,seed
  integer,allocatable        :: np(:)
  integer                    :: err_apertura,ii,intervalos,j
- integer,parameter          :: integration_points = 1000
+ integer,parameter          :: integration_points = 10000
  real,parameter             :: precision_Newton = 1e-5
  real                       :: tol = 0.001, tolfire = 0.25
  real,allocatable           :: param(:,:),concy(:),pi(:,:),iso(:,:)
@@ -367,7 +367,7 @@ module gaiast_globals
     validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG!
     !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue,validPressure
     if(validPressure.and.i>0)then
-     write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
+     !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
      continue
     else
      i=i+1
@@ -430,7 +430,7 @@ module gaiast_globals
     do ijk=1,ncomponents 
      n(ijk) = pureloading(ijk)*concx(ijk)
     end do 
-    write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0),(pureloading(ijk),ijk=1,ncomponents),i
+    write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0) !,(pureloading(ijk),ijk=1,ncomponents),i
     i = i +1
   end do ScanPressures
   close(104)
@@ -451,7 +451,7 @@ module gaiast_globals
   calc: do while (k<=ncomponents.and.CalculatePressures)
 ! {{ interpolation and parameters from k-compound
    funk = ajuste( k )
-   if(funk=='langmuir')mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
+   !if(funk=='langmuir')mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
    n = np(k)
    allocate(apar(0:n-1))
    do j = 0, n-1
@@ -613,27 +613,40 @@ module gaiast_globals
   real                     :: x, delta, integral
   real,intent(in)          :: a(0:n-1), x0,oldPi,piValue
   character(100),intent(in):: funk
+  character(100)           :: mode = 'version1'
   integral = 0.0
   x = 0.0 
   i = 0
-  imax = -10000000
+  imax = 10000000
   if ( x0 == 0.0 ) then
    delta = 1.0/real(integration_points)
   else
-   delta = x0/(integration_points+x0)
+   delta = x0/real(integration_points)!+x0)
   end if
   pressint: do while ( oldPi+ integral <= piValue )
-  ! Integrate by the paralelogram rule
-   x=x0+delta*(0.5+i)
-   Integral = Integral + delta*model(a,n,x,funk)/x
-   i = i+1
-  !if(oldPi + Integral >= piValue)then
-  ! write(6,*)'Integal greater than Pi'
-  !end if
-   if (i==imax) exit pressint
+  select case (mode)
+   case ('version1')
+    !Integrate by the paralelogram rule
+    x=x0+delta*(0.5+i)
+    Integral = Integral + delta*model(a,n,x,funk)/x
+    i = i+1
+   case ('version2')
+    x=x0+delta*0.5*(i*i+2.0*i+1.0)
+    Integral = Integral + delta*model(a,n,x,funk)/x
+  end select
+  !
+  if(oldPi + Integral >= piValue)then
+   if((oldPi + Integral)/piValue >= 1.1) then
+    write(6,*)'Integal greater than Pi!',(oldPi + Integral)/piValue
+   end if
+  end if
+   if (i==imax) then
+     write(6,*)'Overflow in the integral. Compound:',k,piValue
+     exit pressint
+   end if
   end do pressint
   CalculatePressureIntegral = x
-  write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
+  !write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
   !write(6,*)'[ParametersModel]',(a(i),i=0,n-1)
   return
  end function CalculatePressureIntegral
@@ -705,7 +718,7 @@ module gaiast_globals
    read (456,'(A)',iostat=err_apertura) line
    if(err_apertura/=0) exit do1
    read(line,*)datas(1,ii,i),datas(2,ii,i)
-   write(6,*) datas(1,ii,i),datas(2,ii,i)
+   write(6,'(2f20.5)') datas(1,ii,i),datas(2,ii,i)
   end do do1
   close(456)
  end do nisothermpure1
@@ -1094,8 +1107,8 @@ module mod_genetic
    do i = 0, np( compound )-1
     param( compound,i ) = children(1)%phenotype(i+1)
    end do
-   write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
-   write(111,*)'#','Fitness:',fit0,'Biodiversity:',eps
+   !write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
+   !write(111,*)'#','Fitness:',fit0,'Biodiversity:',eps
    return
   end subroutine fit 
 end module mod_genetic
