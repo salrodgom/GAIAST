@@ -1107,8 +1107,8 @@ module mod_genetic
    do i = 0, np( compound )-1
     param( compound,i ) = children(1)%phenotype(i+1)
    end do
-   !write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
-   !write(111,*)'#','Fitness:',fit0,'Biodiversity:',eps
+   write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
+   write(111,*)'#','Fitness:',fit0,'Biodiversity:',eps
    return
   end subroutine fit 
 end module mod_genetic
