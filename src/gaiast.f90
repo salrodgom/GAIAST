@@ -48,7 +48,7 @@ contains
 
  integer function randint(i,j,seed)
   real               ::  a,b
-  integer,intent(in) ::  i,j,seed 
+  integer,intent(in) ::  i,j,seed
   a = real(i)
   b = real(j)
   randint=int(r4_uniform(a,b+1.0,seed))
@@ -83,14 +83,14 @@ module newton
     real(kind=8), parameter :: tol = 1.d-14
 contains
 subroutine solve(f, fp, x0, x, iters, debug)
-    ! Estimate the zero of f(x) using Newton's method. 
+    ! Estimate the zero of f(x) using Newton's method.
     ! Input:
     !   f:  the function to find a root of
     !   fp: function returning the derivative f'
     !   x0: the initial guess
     !   debug: logical, prints iterations if debug=.true.
     ! Returns:
-    !   the estimate x satisfying f(x)=0 (assumes Newton converged!) 
+    !   the estimate x satisfying f(x)=0 (assumes Newton converged!)
     !   the number of iterations iters
     implicit none
     real(kind=8), intent(in)    :: x0
@@ -107,7 +107,7 @@ subroutine solve(f, fp, x0, x, iters, debug)
         print 11, x
  11     format('Initial guess: x = ', e22.15)
         endif
-    ! Newton iteration to find a zero of f(x) 
+    ! Newton iteration to find a zero of f(x)
     do k=1,maxiter
         ! evaluate function and its derivative:
         fx = f(x)
@@ -128,9 +128,9 @@ subroutine solve(f, fp, x0, x, iters, debug)
         ! might not have converged
         fx = f(x)
         if (abs(fx) > tol) then
-            print *, '*** Warning: has not yet converged'
+            print *, '[Warning]: calculation has not converged yet'
             endif
-        endif 
+        endif
     ! number of iterations taken:
     iters = k-1
 end subroutine solve
@@ -286,7 +286,7 @@ module gaiast_globals
   write(222,*)'#', inferior, superior
   do ib=0,intervalos-1
    do compound=1,ncomponents
-    funk = ajuste( compound ) 
+    funk = ajuste( compound )
     allocate(apar(0:np(compound)-1))
     apar = 0.0
     do jb = 0, np(compound) - 1
@@ -379,7 +379,7 @@ module gaiast_globals
 ! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
     do ijk=1,ncomponents
      if (presion(ijk,i) /= 0.0) aux1=aux1+presion(1,i)*concy(ijk)/(presion(ijk,i)*concy(1))
-    end do 
+    end do
 ! Case where there is not a Pressure i that makes Pi of component i = Pi of component 1: aux1 is zero by initialization
     if (aux1/=0.0) then
      concx(1) = 1.0/(1+aux1)
@@ -427,9 +427,9 @@ module gaiast_globals
      aux2 = 0.0
     end if
     if (aux2/=0.0) n(0) = 1.0/aux2
-    do ijk=1,ncomponents 
+    do ijk=1,ncomponents
      n(ijk) = pureloading(ijk)*concx(ijk)
-    end do 
+    end do
     write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0) !,(pureloading(ijk),ijk=1,ncomponents),i
     i = i +1
   end do ScanPressures
@@ -470,18 +470,18 @@ module gaiast_globals
       !a2=apar(2)
       !b2=apar(3)
       !c =piValue
-      !a = a1!0.5*(a1+a2) 
+      !a = a1!0.5*(a1+a2)
       !p1 = (sqrt(4*b1*b2*c**(1.0/a)+b1**2-2*b1*b2+b2**2)-b1-b2)/(2*b1*b2)
       !a = a2
       !p2 = (sqrt(4*b1*b2*c**(1.0/a)+b1**2-2*b1*b2+b2**2)-b1-b2)/(2*b1*b2)
       !presion(k,point) = abs((p1+p2)/2.0)
-     end select 
+     end select
     case ('integral')
     oldPi = lastPi(k)
     apar = 0.0
     do j = 0, n-1
      apar(j) = param(k,j)
-    end do 
+    end do
     if (point==0) then
      p = 0.0
      presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
@@ -535,7 +535,7 @@ module gaiast_globals
    else
     piGuess=piGuess+deltaPi
     if(j==npress(compound)-1) lastPass = .true.
-   end if 
+   end if
   end do
   if(lastPass.and.piGuess<piValue) CalculatePressureLinear = 0.0
   return
@@ -572,7 +572,7 @@ module gaiast_globals
     X=X-precision_Newton
    else
     X=X+precision_Newton
-   end if 
+   end if
   end do
   if(X<datas(1,compound,n).or.X>datas(1,compound,n+1)) then
    write(6,*)"WARNING: A solution for the linear equation was not found between pressures",&
@@ -615,7 +615,7 @@ module gaiast_globals
   character(100),intent(in):: funk
   character(100)           :: mode = 'version1'
   integral = 0.0
-  x = 0.0 
+  x = 0.0
   i = 0
   imax = 10000000
   if ( x0 == 0.0 ) then
@@ -702,7 +702,7 @@ module gaiast_globals
   if(err_apertura/=0) stop '[ERROR] isotermaN.dat :  Catastrophic failure'
   do0: do
    READ (iso,'(A)',IOSTAT=err_apertura) line
-   IF( err_apertura /= 0 ) EXIT do0 
+   IF( err_apertura /= 0 ) EXIT do0
    npress(ii)=npress(ii)+1
   end do do0
   close(iso)
@@ -731,7 +731,7 @@ module gaiast_globals
  select case (funk)
   case("freundlich")
    n=2 ! numero de parametros del modelo.
-  case ("langmuir")       
+  case ("langmuir")
    n=2
   case ("langmuir_freundlich")
    n=3
@@ -750,7 +750,7 @@ module gaiast_globals
  end select
  return
  end subroutine MakeInitPOP
- 
+
  real function model(a,n,xx,funk)
   implicit none
   integer,intent(in)        :: n
@@ -771,7 +771,7 @@ module gaiast_globals
    case("langmuir_freundlich_dualsite")
     model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
    case("jensen")!f(x)=K1*x/(1+(K1*x/(alfa*(1+k2*x))**c))**(1/c)
-    model = a(0)*xx/(1.0+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3)) 
+    model = a(0)*xx/(1.0+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3))
    !model = a(0)*xx/(1+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3))
    case ("dubinin_raduschkevich") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
@@ -830,7 +830,7 @@ module mod_genetic
    axolotl%fitness = fitness( axolotl%phenotype,compound)
    return
   end subroutine UpdateCitizen
- 
+
   real function Fitness(phenotype,compound)
    implicit none
    real, intent(in)    :: phenotype(maxnp)
@@ -882,7 +882,7 @@ module mod_genetic
   end subroutine WriteCitizen
 
   subroutine piksrt(n,arr)
-  ! Sort real array() of n elements 
+  ! Sort real array() of n elements
   implicit none
   integer :: n,j,i = 0
   REAL    :: a,arr(n)
@@ -912,13 +912,13 @@ module mod_genetic
     inter:do i=1,ga_size
     if( parents(i)%fitness== ftnss(k))then
       sorted(k) = parents(i)
-      cycle inter 
+      cycle inter
     end if
     end do inter
    end do exter
    parents=sorted
   end subroutine SortByFitness
-  
+
   real function Biodiversity( compound )
    implicit none
    integer,intent(in)             :: Compound
@@ -938,7 +938,7 @@ module mod_genetic
     case('Deep')
      do k = 1, ga_size
       do j = k+1,ga_size
-        Biodiversity = Biodiversity + & 
+        Biodiversity = Biodiversity + &
          sum([(abs(iachar( children(k)%genotype(i:i)) - &
           iachar( children(j)%genotype(i:i))/real(32*np(compound))),i=1,32*np(compound))])
       end do
@@ -960,7 +960,7 @@ module mod_genetic
     macrophage%genotype(i*32+1:i*32+1) = '0'
    end do
   end subroutine Mutate
- 
+
   subroutine NuclearDisaster(Compound)
    implicit none
    integer,intent(in) ::  Compound
@@ -1025,7 +1025,7 @@ module mod_genetic
    integer,intent(out) :: j1,j2
    j1  = randint(1, int(ga_size/3),seed)
    j2  = randint(1, int(ga_size/3),seed)
-   do while ( j1 == j2 ) 
+   do while ( j1 == j2 )
     j2 = randint(1, int(ga_size/3),seed)
    end do
    return
@@ -1069,7 +1069,7 @@ module mod_genetic
      end if
     end do slct2
    return
-  end subroutine choose_propto_fitness 
+  end subroutine choose_propto_fitness
 
   subroutine Fit(Compound,Seed)
    implicit none
@@ -1094,7 +1094,7 @@ module mod_genetic
     else
      if( abs(diff - eps) <= 0.1 .and. ii >= minstep .and. &
       parents(1)%fitness - fit0 == 0 ) then
-      kk = kk + 1 
+      kk = kk + 1
      else
       kk = 0
      end if
@@ -1110,7 +1110,7 @@ module mod_genetic
    write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
    write(111,*)'#','Fitness:',fit0,'Biodiversity:',eps
    return
-  end subroutine fit 
+  end subroutine fit
 end module mod_genetic
 
 program main
@@ -1135,5 +1135,5 @@ program main
    call IAST_binary()
  end if
  close(111)
- stop 
+ stop ':)'
 end program main
