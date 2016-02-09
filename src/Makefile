@@ -1,11 +1,14 @@
-LINKFLAGS_FOR = -pedantic -O2 -march=native
+LINKFLAGS_FOR = -pedantic -O3 -march=native
 COMP_FOR = gfortran
-GCCVERSION = $(shell gfortran -dumpversion)
-GCCVERSIONGTEQ4 := $(shell expr `${COMP_FOR} -dumpversion | cut -f1 -d.` \>= 4)
+GFORTRANVERSION = $(shell gfortran -dumpversion)
+GFORTRANVERSIONGTEQ4 := $(shell expr `${COMP_FOR} -dumpversion ` \== 4.9.2)
 GNUPLOT_SCRIPT = png.gp
-ifeq "$(GCCVERSIONGTEQ4)" "1"
-    LINKFLAGS_FOR += -Wtype-limits
-endif
+check:
+	GFORTRANVERSION = $(shell gfortran -dumpversion)
+	GFORTRANVERSIONGTEQ4 := $(shell expr `${COMP_FOR} -dumpversion ` \== 4.9.2)
+	ifeq "$(GFORTRANVERSIONGTEQ4)" "0"
+		$(error Version de gfortran no valida: use 4.9.2 o superior )
+	endif
 install:
 	${COMP_FOR} ${LINKFLAGS_FOR} gaiast.f90 -o gaiast
 all:

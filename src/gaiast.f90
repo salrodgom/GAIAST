@@ -1117,6 +1117,10 @@ program main
  use mod_random
  use gaiast_globals
  use mod_genetic
+ use iso_fortran_env
+ print '(4a)', 'This file was compiled by ', &
+       compiler_version(), ' using the options ', &
+       compiler_options()
  call init_random_seed(seed)
  call read_input()
  call ReadIsotherms()

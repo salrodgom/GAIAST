@@ -64,8 +64,8 @@ contains
    write(*,'(b1)')'R4_UNIFORM - Fatal error!'
    write(*,'(b1)')'Input value of SEED = 0.'
    stop '[ERROR] Chiquitan chiquititan tan tan &
-    Que tun pan pan que tun pan que tepe tepe &
-    Pan pan pan que tun pan que pin '
+  &   Que tun pan pan que tun pan que tepe tepe &
+  &   Pan pan pan que tun pan que pin '
   end if
   k=seed/127773
   seed=16807*(seed-k*17773)-k*2836
@@ -1117,6 +1117,10 @@ program main
  use mod_random
  use gaiast_globals
  use mod_genetic
+ use iso_fortran_env
+ print '(4a)', 'This file was compiled by ', &
+       compiler_version(), ' using the options ', &
+       compiler_options()
  call init_random_seed(seed)
  call read_input()
  call ReadIsotherms()
