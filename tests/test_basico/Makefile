@@ -1,5 +1,6 @@
-LINKFLAGS_FOR = -O2 -march=native
+LINKFLAGS_FOR = -Wall -pedantic -O2 -march=native
 COMP_FOR = gfortran
+GNUPLOT_SCRIPT = png.gp
 install:
 	${COMP_FOR} ${LINKFLAGS_FOR} gaiast.f90 -o gaiast
 all:
@@ -10,5 +11,5 @@ all:
 execute:
 	./gaiast < input
 plot:
-	gnuplot png.gp ; display iast.png
+	gnuplot ${GNUPLOT_SCRIPT} ; display iast.png
 clean:;         @rm -f *.o *.mod gaiast isotermaN.dat
