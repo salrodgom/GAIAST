@@ -12,7 +12,6 @@ check:
 install:
 	${COMP_FOR} ${LINKFLAGS_FOR} gaiast.f90 -o gaiast
 all:
-	make check
 	make install
 	make execute
 	make clean
