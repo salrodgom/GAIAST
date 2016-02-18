@@ -747,6 +747,10 @@ module gaiast_globals
    n=6
   case ("dubinin_astakhov")
    n=4
+  case ("jovanovic")
+   n=2
+  case ("jovanovic_freundlich")
+   n=3
  end select
  return
  end subroutine MakeInitPOP
@@ -777,6 +781,10 @@ module gaiast_globals
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
    case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
+   case ("jovanovic")
+    model = a(0)*(1.0 - exp(-a(1)*xx))
+   case ("jovanovic_freundlich")
+    model = a(0)*(1.0 - exp((-a(1)*xx)**a(2)))
   end select
   return
  end function model

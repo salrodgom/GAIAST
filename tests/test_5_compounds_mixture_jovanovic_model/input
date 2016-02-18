@@ -1,0 +1,30 @@
+# ncomp = numero de componentes, a continuacion se abre un loop de tantas filas como componentes
+# fraccion molar, (el programa normaliza a 1 en funcion de la proporcion del input)
+# y modelo al que se vva a ajustar cada isoterma (isoterma1.dat, isoterma2.dat )
+# freundlich:                   a(0)*xx**a(1)
+# langmuir  :                   a(0)*a(1)*xx/(1+a(1)*xx)
+# langmuir_freundlich:          a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))
+# toth:                         a(0)*a(1)*x/(1+(a(1)*x)**a(2))**(1/a(2))
+# langmuir_dualsite:            a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
+# langmuir_freundlich_dualsite: a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2)) + a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
+# jensen:                       a(0)*xx/(1.0+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3)) 
+# dubinin_raduschkevich:        a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
+# dubinin_astakhov              a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
+ncomp 5
+1.0 jovanovic
+1.0 jovanovic
+1.0 jovanovic
+1.0 jovanovic
+1.0 jovanovic
+# inter: numero de presiones que van a tener las isotermas  de la mezcla
+inter 512
+# ffit? : valor logico, por defecto .true. :  
+# .true. se procede al ajuste de las isotermas, .false. > Los parametros se toman en un loop que se abre en las lineas siguientes, a linea por componente
+ffit? .true.
+# Fire? es para realizar ajustes rapidos (por defecto .false.), no use esto de forma formal.
+# Puede ser valido para isotermas, muy dispares en forma y presiones.
+# Se marca una parada para el ajuste en el fitness, con una tolerancia marcada por el real de la siguiente linea
+#Fire? .true.
+#0.40
+# temperatura, por defecto 298 K, para aquellos modelos que la necesitan: dubinin_raduschkevich
+# tol, tolerancia del IAST para considerar que la presion parcial de los componentes esta igualada, por defecto 0.001
