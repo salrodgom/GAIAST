@@ -11,11 +11,11 @@
 # dubinin_raduschkevich:        a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
 # dubinin_astakhov              a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
 ncomp 5
-1.0 jovanovic
-1.0 jovanovic
-1.0 jovanovic
-1.0 jovanovic
-1.0 jovanovic
+1.0  langmuir_dualsite 
+1.0  langmuir_dualsite
+1.0  langmuir_dualsite
+1.0  langmuir_dualsite
+1.0  langmuir_dualsite
 # inter: numero de presiones que van a tener las isotermas  de la mezcla
 inter 512
 # ffit? : valor logico, por defecto .true. :  
