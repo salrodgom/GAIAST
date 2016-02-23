@@ -451,7 +451,7 @@ module gaiast_globals
   calc: do while (k<=ncomponents.and.CalculatePressures)
 ! {{ interpolation and parameters from k-compound
    funk = ajuste( k )
-   !if(funk=='langmuir')mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
+   if(funk=='langmuir')mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
    n = np(k)
    allocate(apar(0:n-1))
    do j = 0, n-1
@@ -747,10 +747,12 @@ module gaiast_globals
    n=6
   case ("dubinin_astakhov")
    n=4
+  case ("jovanovic_smoothed")
+   n=3
   case ("jovanovic")
    n=2
   case ("jovanovic_freundlich")
-   n=3
+   n=4
  end select
  return
  end subroutine MakeInitPOP
@@ -781,10 +783,12 @@ module gaiast_globals
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
    case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
+   case ("jovanovic_smoothed")
+    model = a(0)*(1.0 - exp(-a(1)*xx))*exp(-a(2)*xx)
    case ("jovanovic")
     model = a(0)*(1.0 - exp(-a(1)*xx))
    case ("jovanovic_freundlich")
-    model = a(0)*(1.0 - exp(-(a(1)*xx)**a(2)))
+    model = a(0)*(1.0 - exp(-(a(1)*xx)**a(2)))*exp(a(3)*xx**a(2))
   end select
   return
  end function model
@@ -872,18 +876,15 @@ module mod_genetic
    character(len=100)             :: fmt_
    character(len=32*np(compound)) :: wnowaste
    real                           :: wnowasteparam(1:32*np(compound)),wfitness,kkk
-   !do i=1,32*np(compound)
-   ! wnowaste(i:i)=' '
-   !end do
+   do i=1,32*np(compound)
+    wnowaste(i:i)=' '
+   end do
    ! ...
-   !wnowaste(1:32*np(compound))=parents(k)%genotype(1:32*np(compound))
    wnowaste = parents(k)%genotype
    wnowasteparam = parents(k)%phenotype
-   !do i=1,np(compound)
-   ! wnowasteparam(i)=parents(k)%phenotype(i)
-   !end do
    wfitness = parents(k)%fitness
-   write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f20.10,1x,f20.10)')compound,kk,wnowaste(1:32),wnowasteparam(1),wfitness,kkk
+   write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f20.10,1x,a,1x,f20.10,1x,a)')compound,kk,wnowaste(1:32),&
+        wnowasteparam(1),wfitness,'[Fitness]',kkk,'[Similarity]'
    do i=2,np(compound)
     write(6,'(9x,a32,1x,e25.12)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i)
    end do
@@ -914,7 +915,6 @@ module mod_genetic
     ftnss(k)=parents(k)%fitness
     if(isnan(parents(k)%fitness)) ftnss(k) = 9999999999.99
    end do
-   !call PIKSRT(ga_size,ftnss)
    call QsortC( ftnss )
    exter:do k=1,ga_size
     inter:do i=1,ga_size
@@ -1116,7 +1116,7 @@ module mod_genetic
     param( compound,i ) = children(1)%phenotype(i+1)
    end do
    write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
-   write(111,*)'#','Fitness:',fit0,'Biodiversity:',eps
+   write(111,*)'#','Fitness:',fit0,'Similarity:',eps
    return
   end subroutine fit
 end module mod_genetic
@@ -1136,7 +1136,7 @@ program main
   open(111,file="iso.dat")
   do ii = 1, ncomponents
    write(6,'("Fitting compound:",1x,i2)') ii
-   write(6,'(a14,1x,a24,1x,a24,1x,a14,1x,a14)')'Compound/Step:','Cromosome:','Parameters','Fitness','Diversity'
+   write(6,'(a14,1x,a24,1x,a24,10x,a14)')'Compound/Step:','Cromosome:','Parameters','Control'
    call fit(ii,seed)
   end do
  end if
