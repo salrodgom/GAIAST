@@ -464,17 +464,6 @@ module gaiast_globals
       case ('langmuir')
       presion(k,point) = (exp(piValue/apar(0))-1/apar(1))
       !case('langmuir_dualsite')
-      !! Taylor:
-      !a1=apar(0)
-      !b1=apar(1)
-      !a2=apar(2)
-      !b2=apar(3)
-      !c =piValue
-      !a = a1!0.5*(a1+a2)
-      !p1 = (sqrt(4*b1*b2*c**(1.0/a)+b1**2-2*b1*b2+b2**2)-b1-b2)/(2*b1*b2)
-      !a = a2
-      !p2 = (sqrt(4*b1*b2*c**(1.0/a)+b1**2-2*b1*b2+b2**2)-b1-b2)/(2*b1*b2)
-      !presion(k,point) = abs((p1+p2)/2.0)
      end select
     case ('integral')
     oldPi = lastPi(k)
@@ -641,7 +630,7 @@ module gaiast_globals
    end if
   end if
    if (i==imax) then
-     write(6,*)'Overflow in the integral. Compound:',k,piValue
+     write(6,*)'Overflow in the integral. Compound:',k,piValue,oldPi + Integral
      exit pressint
    end if
   end do pressint
@@ -674,6 +663,9 @@ module gaiast_globals
   case ('langmuir_dualsite')
    x1 = presion(k,i)
    lastPi = apar(0)*log(1+apar(1)*x1)+apar(2)*log(1+apar(3)*x1)
+  case ('jovanovic')
+   x1 = presion(k,i)
+   lastPi = apar(0)*(x1+exp(-apar(1)*x1)/apar(1))
   case default
    if ( i==0 ) then
     x0=0.0

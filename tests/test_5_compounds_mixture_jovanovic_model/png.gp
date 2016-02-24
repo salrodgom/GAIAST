@@ -13,21 +13,17 @@ set ylabel 'Loading / a. u.'
 set multiplot layout 1,2
 set logscale x
 set yrange [0:]
-plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'hexane',\
-     'isoterma2.dat' w p pt 6 lc rgb 'green' t '2-methylpentane',\
-     'isoterma3.dat' w p pt 6 lc rgb 'blue' t '3-methylpentane',\
-     'isoterma4.dat' w p pt 6 lc rgb 'orange' t '22-dimethylbutane',\
-     'isoterma5.dat' w p pt 6 lc rgb 'dark-violet' t '23-dimethylbutane',\
+plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t '2-methylpentane',\
+     'isoterma2.dat' w p pt 6 lc rgb 'green' t '3-methylpentane',\
+     'isoterma3.dat' w p pt 6 lc rgb 'blue' t '22-dimethylbutane',\
+     'isoterma4.dat' w p pt 6 lc rgb 'orange' t '23-dimethylbutane',\
      'curves.txt' u 1:2 w l lt 1 lc rgb 'red'   notitle,\
      'curves.txt' u 4:5 w l lt 1 lc rgb 'green' notitle,\
      'curves.txt' u 7:8 w l lt 1 lc rgb 'blue' notitle,\
-     'curves.txt' u 10:11 w l lt 1 lc rgb 'orange' notitle,\
-     'curves.txt' u 13:14 w l lt 1 lc rgb 'dark-violet' notitle
-plot 'adsorcion.dat' u 1:2 w p pt 7 ps 0.5 lt 1 lc rgb 'red' t 'hexane',\
-     'adsorcion.dat' u 1:3 w p pt 7 ps 0.5 lt 1 lc rgb 'green' t '2-methylpentane',\
-     'adsorcion.dat' u 1:4 w p pt 7 ps 0.5 lt 1 lc rgb 'blue' t '3-methylpentane',\
-     'adsorcion.dat' u 1:5 w p pt 7 ps 0.5 lt 1 lc rgb 'orange' t '22-dimethylbutane',\
-     'adsorcion.dat' u 1:6 w p pt 7 ps 0.5 lt 1 lc rgb 'dark-violet' t '23-dimethylbutane'
-
-#     'adsorcion.dat' u 1:7 w p pt 7 ps 0.5 lt 1 lc rgb 'dark-black' t 'total'
+     'curves.txt' u 10:11 w l lt 1 lc rgb 'orange' notitle
+set xrange [:1e7]
+plot 'adsorcion.dat' u 1:2 w p pt 7 ps 0.5 lt 1 lc rgb 'red' t '2-methylpentane',\
+     'adsorcion.dat' u 1:3 w p pt 7 ps 0.5 lt 1 lc rgb 'green' t '3-methylpentane',\
+     'adsorcion.dat' u 1:4 w p pt 7 ps 0.5 lt 1 lc rgb 'blue' t '22-dimethylbutane',\
+     'adsorcion.dat' u 1:5 w p pt 7 ps 0.5 lt 1 lc rgb 'orange' t '23-dimethylbutane'
 unset multiplot

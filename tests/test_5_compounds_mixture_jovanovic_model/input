@@ -1,14 +1,7 @@
-ncomp 5
-1.0  langmuir_dualsite 
-1.0  langmuir_dualsite
-1.0  langmuir_dualsite
-1.0  langmuir_dualsite
-1.0  langmuir_dualsite
-inter 512
+ncomp 4
+1.0 langmuir_dualsite
+1.0 langmuir_dualsite
+1.0 toth
+1.0 jovanovic
+inter 1024
 ffit? .true.
-1.62597525       1.92453135E-05   2.95190730E-05   1.94717340E-05
-0.249999866       1.76384049E-06   1.45409858       1.36783157E-04
-0.480469406       3.10956216E-06   1.43749988       1.81296666E-04
-1.48896098       4.65390272E-04  0.249999836       7.88992224E-07
-4.82630800E-04   1.15304508E+34   1.46287417       3.99591372E-04
-#1.62597525       1.92453135E-05   2.95190730E-05   1.94717340E-05
