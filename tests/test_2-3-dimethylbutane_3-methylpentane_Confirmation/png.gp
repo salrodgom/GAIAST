@@ -14,13 +14,15 @@ set multiplot layout 1,2
 set logscale x
 set yrange [0:]
 set k top left
-plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'C_1 MCNuT',\
-     'isoterma2.dat' w p pt 6 lc rgb 'green' t 'C_2 MCNuT',\
+set title 'Pure Compounds'
+plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'C_1 sim',\
+     'isoterma2.dat' w p pt 6 lc rgb 'green' t 'C_2 sim',\
      'curves.txt' u 1:2 w l lt 1 lc rgb 'green' title 'Best Fit',\
      'curves.txt' u 4:5 w l lt 1 lc rgb 'red' title 'Best Fit'
+set title 'Binary Mixture'
 plot 'adsorcion.dat' u 1:2 w l  lt 1 lc rgb 'red' t 'C_1 IAST',\
      'adsorcion.dat' u 1:3 w l  lt 1 lc rgb 'green' t 'C_2 IAST',\
      'adsorcion.dat' u 1:5 w p pt 7 ps 0.5 lt 1 lc rgb 'blue' t 'total',\
-     '23-dimethylbutane.2load' u 1:2 w p pt 6 ps 1 lt 1 lc rgb 'red' title 'C_1 MCNuT',\
-     '3-methylpentane.2load'   u 1:2 w p pt 6 ps 1 lt 1 lc rgb 'green' title 'C_2 MCNuT'
+     '23-dimethylbutane.2load' u 1:2 w p pt 6 ps 1 lt 1 lc rgb 'red' title 'C_1 sim',\
+     '3-methylpentane.2load'   u 1:2 w p pt 6 ps 1 lt 1 lc rgb 'green' title 'C_2 sim'
 unset multiplot
