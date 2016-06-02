@@ -1,33 +1,7 @@
-# ncomp = numero de componentes, a continuacion se abre un loop de tantas filas como componentes
-# fraccion molar, (el programa normaliza a 1 en funcion de la proporcion del input)
-# y modelo al que se vva a ajustar cada isoterma (isoterma1.dat, isoterma2.dat )
-# freundlich:                   a(0)*xx**a(1)
-# langmuir  :                   a(0)*a(1)*xx/(1+a(1)*xx)
-# langmuir_freundlich:          a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))
-# toth:                         a(0)*a(1)*x/(1+(a(1)*x)**a(2))**(1/a(2))
-# langmuir_dualsite:            a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
-# langmuir_freundlich_dualsite: a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2)) + a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
-# jensen:                       a(0)*xx/(1.0+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3)) 
-# dubinin_raduschkevich:        a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
-# dubinin_astakhov              a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
-ncomp 3
+ncomp 2
 1.0 langmuir_dualsite
 1.0 langmuir_dualsite
-1.0 langmuir_dualsite
-# inter: numero de presiones que van a tener las isotermas  de la mezcla
-inter 1024
-# ffit? : valor logico, por defecto .true. :  
-# .true. se procede al ajuste de las isotermas, .false. > Los parametros se toman en un loop que se abre en las lineas siguientes, a linea por componente
-ffit? .true.
-#9.73839664       7.81249627E-03   1.43750131      0.124997385
-#1.37499571       1.80978212E-04   9.50000000       5.85937463E-02
-#8.62500000       5.75296395E-02   3.37493420       3.05175727E-05
-# Fire? es para realizar ajustes rapidos (por defecto .false.), no use esto de forma formal.
-# Puede ser valido para isotermas, muy dispares en forma y presiones.
-# Se marca una parada para el ajuste en el fitness, con una tolerancia marcada por el real de la siguiente linea
-#Fire? .false.
-#0.20
-# temperatura, por defecto 298 K, para aquellos modelos que la necesitan: dubinin_raduschkevich
-#temp  298.0
-# tol, tolerancia del IAST para considerar que la presion parcial de los componentes esta igualada, por defecto 0.001
-#tol   0.001
+inter 4096
+ffit? .false.
+10.6875019       1.00262333E-02  0.374999762       9.52436829    
+7.10912609       8.59375000E-02   2.96875048       1.25256972E-02
