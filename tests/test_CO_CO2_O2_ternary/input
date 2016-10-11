@@ -28,6 +28,7 @@ ffit? .false.
 #Fire? .true.
 #0.40
 # temperatura, por defecto 298 K, para aquellos modelos que la necesitan: dubinin_raduschkevich
+RSeed 1225935557
 temp  298.0
 # tol, tolerancia del IAST para considerar que la presion parcial de los componentes esta igualada, por defecto 0.001
 tol   0.001
