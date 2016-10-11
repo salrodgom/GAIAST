@@ -192,7 +192,7 @@ end module qsort_c_module
 module gaiast_globals
  use mod_random
  implicit none
- integer                    :: npar,ncomponents,i,seed
+ integer                    :: npar,ncomponents,i,seed = 0
  integer,allocatable        :: np(:)
  integer                    :: err_apertura,ii,intervalos,j
  integer,parameter          :: integration_points = 10000
@@ -206,7 +206,7 @@ module gaiast_globals
  character(100),allocatable :: ajuste(:)
  character(100)             :: line,string,intmethod
  character(5)               :: inpt
- logical                    :: flag = .true., FlagFire = .false.
+ logical                    :: flag = .true., FlagFire = .false.,seed_flag=.true.
  real,parameter             :: R = 0.008314472 ! kJ / mol / K
  real                       :: T = 298.0
  real                       :: inferior
@@ -248,6 +248,10 @@ module gaiast_globals
      allocate(pi(ncomponents,0:intervalos),iso(ncomponents,0:intervalos))
    end if
    if(line(1:5)=='toler') read(line,*)inpt, Tol
+   if(line(1:5)=='RSeed') then
+    seed_flag=.false.
+    read(line,*)inpt, seed
+   end if
    if(line(1:5)=='tempe') read(line,*)inpt, T
    if(line(1:5)=='InteM') read(line,*)inpt, IntMethod
    if(line(1:5)=='Fire?') then
@@ -1121,8 +1125,17 @@ program main
  print '(4a)', 'This file was compiled by ', &
        compiler_version(), ' using the options ', &
        compiler_options()
- call init_random_seed(seed)
+ print '(a)',' ',&
+"#   ________    _____   .___    _____     ____________________",&
+"#  /  _____/   /  _  \  |   |  /  _  \   /   _____/\__    ___/",&
+"# /   \  ___  /  /_\  \ |   | /  /_\  \  \_____  \   |    |   ",&
+"# \    \_\  \/    |    \|   |/    |    \ /        \  |    |   ",&
+"#  \______  /\____|__  /|___|\____|__  //_______  /  |____|   ",&
+"#         \/         \/              \/         \/            ",&
+" "
  call read_input()
+ if (seed_flag) call init_random_seed(seed)
+ write(6,'("Random Seed:",1x,i10)') seed
  call ReadIsotherms()
  if(flag)then
   open(111,file="iso.dat")

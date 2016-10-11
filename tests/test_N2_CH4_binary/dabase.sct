@@ -1,7 +1,7 @@
 #!/bin/bash
 # variables
-file1=ch4.txt
-file2=n2.txt
+file1=ch4.txt.all
+file2=n2.txt.all
 # funciones
 function make_input_iast {
 echo "ncomp 2
@@ -15,8 +15,8 @@ ffit? .true." > input
 make install
 while read line ; do
  echo $line
- grep $line $file1 | sed 's/;/ /g' | awk '{print $4,$5}' > isoterma1.dat
- grep $line $file2 | sed 's/;/ /g' | awk '{print $4,$5}' > isoterma2.dat
+ grep $line $file1 | sed 's/;/ /g' | grep "$line " | awk '{print $4,$5}' > isoterma1.dat
+ grep $line $file2 | sed 's/;/ /g' | grep "$line " | awk '{print $4,$5}' > isoterma2.dat
  sort -nk1 isoterma1.dat > c
  mv c isoterma1.dat
  sort -nk1 isoterma2.dat > c
@@ -29,5 +29,5 @@ while read line ; do
  mv input* *.png *.dat curves.txt $line
  rm $line/adsorcion.dat
 done < list
-rm gaiast.f90 Makefile png.gp
+rm gaiast
 exit 0
