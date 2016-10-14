@@ -1027,10 +1027,10 @@ module mod_genetic
   subroutine choose_randomly(j1,j2)
    implicit none
    integer,intent(out) :: j1,j2
-   j1  = randint(1, int(ga_size/3),seed)
-   j2  = randint(1, int(ga_size/3),seed)
+   j1  = randint(1, int(ga_size/2),seed)
+   j2  = randint(1, int(ga_size/2),seed)
    do while ( j1 == j2 )
-    j2 = randint(1, int(ga_size/3),seed)
+    j2 = randint(1, int(ga_size/2),seed)
    end do
    return
   end subroutine choose_randomly
