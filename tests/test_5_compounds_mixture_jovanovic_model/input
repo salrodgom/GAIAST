@@ -1,7 +1,7 @@
 ncomp 4
-1.0 langmuir_dualsite
-1.0 langmuir_dualsite
-1.0 toth
+1.0 toth langmuir_dualsite
+1.0 toth langmuir_dualsite
+1.0 toth langmuir_dualsite
 1.0 jovanovic
 inter 1024
 ffit? .true.

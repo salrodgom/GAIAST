@@ -1,4 +1,4 @@
-LINKFLAGS_FOR = -pedantic -O3 -march=native
+LINKFLAGS_FOR = -pedantic -O3 -march=native 
 COMP_FOR = gfortran
 GFORTRANVERSION = $(shell gfortran -dumpversion)
 GFORTRANVERSIONGTEQ4 := $(shell expr `${COMP_FOR} -dumpversion ` \== 4.9.2)
