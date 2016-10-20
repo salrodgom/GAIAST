@@ -709,7 +709,7 @@ module gaiast_globals
   write(6,'(a15,1x,a15)') test_name,ajuste(ii)
   call system ("cp " // test_name // " isotermaN.dat")
   open(unit=456,file="isotermaN.dat",status='old',iostat=err_apertura)
-  if(err_apertura/=0) stop '[ERROR] isotermaN.dat :  Catastrophic failure'
+  if(err_apertura/=0) stop '[ERROR] isotermaN.dat :  Catastrophic failure, check maxnp, maxcompounds or maxdata'
   do1: do i = 1,npress(ii)
    read (456,'(A)',iostat=err_apertura) line
    if(err_apertura/=0) exit do1
@@ -960,9 +960,9 @@ module mod_genetic
     ipos = randint(32*(i-1)+1,32*i,seed)
     macrophage%genotype(ipos:ipos) = achar(randint(48,49,seed))
    end do
-   do i = 0,np(Compound)
-    macrophage%genotype(i*32+1:i*32+1) = '0'
-   end do
+   !do i = 0,np(Compound)
+   ! macrophage%genotype(i*32+1:i*32+1) = '0'
+   !end do
   end subroutine Mutate
 
   subroutine NuclearDisaster(Compound)
@@ -974,9 +974,9 @@ module mod_genetic
     do j=1,32*np(compound)
      Children%genotype(j:j) = achar(randint(48,49,seed))
     end do
-    do j = 0,np(compound)-1
-     Children%genotype(j*32+1:j*32+1) = '0'
-    end do
+    !do j = 0,np(compound)-1
+    ! Children%genotype(j*32+1:j*32+1) = '0'
+    !end do
     call UpdateCitizen(Children(i),Compound)
    end do
   end subroutine NuclearDisaster
