@@ -1,10 +1,9 @@
 ncomp 3
-1.0 langmuir
+1.0 langmuir_freundlich 
 1.0 langmuir_freundlich
-1.0 langmuir
+1.0 langmuir_freundlich
 inter 2048
-ffit? .true.
-Rseed 1382222979
-13.4738684       2.10733130E-03
+ffit? .false.
+13.4738684       2.10733130E-03  1.0
 16.0337486       1.14440863E-05  0.914372385
-15.8858557       7.60810508E-04 
+15.8858557       7.60810508E-04  1.0

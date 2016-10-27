@@ -8,8 +8,8 @@ set o 'iast.png'
 set k top left
 #set format x "%2.0t{/Symbol \264}10^{%L}"
 set format x "10^{%L}"
-set xlabel 'Pressure / a. u.'
-set ylabel 'Loading / a. u.'
+set xlabel 'Fugacity / Pa'
+set ylabel 'Loading / mole./u.c.'
 set multiplot layout 1,2
 set logscale x
 set yrange [0:]

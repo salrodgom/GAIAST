@@ -732,8 +732,14 @@ module gaiast_globals
   case ("langmuir_freundlich")
    n=3
   case ("toth")
+   !write(6,*)'Please, considera citar:'
+   !write(6,*)'REF.  Toth, State equations of the solid gas interface layer, Acta Chem. Acad. Hung. 69 (1971) 311–317.'
    n=3
   case ("jensen")
+   n=4
+  case ("jensen_seaton")
+   write(6,*)'Please, considera citar:'
+   write(6,*)'C. R. C. Jensen and N. A. Seaton, Langmuir, 1996, 12, 2866.'
    n=4
   case ("dubinin_raduschkevich")
    n=3
@@ -749,6 +755,8 @@ module gaiast_globals
    n=2
   case ("jovanovic_freundlich")
    n=4
+  case ("langmuir_sips")
+   n=5
  end select
  return
  end subroutine MakeInitPOP
@@ -765,9 +773,17 @@ module gaiast_globals
    case("langmuir")
     model = a(0)*a(1)*xx/(1+a(1)*xx)
    case("langmuir_freundlich")
-    model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))
+! Also known as the Sips equation
+    ! REF. R. Sips, J. Chem. Phys., (1948);   http://dx.doi.org/10.1063/1.1746922
+    ! REF. R. Sips,  J. Chem. Phys. 18, 1024 (1950); http://dx.doi.org/10.1063/1.1747848 
+    ! REF. Turiel et al., 2003, DOI: 10.1039/B210712K
+    ! REF. Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001). Characterization of molecularly imprinted polymers with the Langmuir-Freundlich isotherm. Analytical chemistry, 73(19), 4584-4591.
+    !model = a(0)*a(1)*xx**a(2)/(1.0+a(1)*xx**a(2))
+    model = a(0)*a(1)*xx**a(2)/(1.0+a(1)*xx**a(2))
    case("toth") ! f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)
-    model = a(0)*a(1)*xx/((1.0+(a(1)*xx)**a(2))**(1.0/a(2)))
+    ! REF.  Toth, State equations of the solid gas interface layer, Acta Chem. Acad. Hung. 69 (1971) 311–317.
+    model = a(0)*a(1)*xx/((1+(a(1)*xx)**(a(2)))**(1.0/a(2)))
+    !model = a(0)*a(1)*xx/((1.0+(a(1)*xx)**a(2))**(1.0/a(2)))
    case("langmuir_dualsite")
     model = a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
    case("langmuir_freundlich_dualsite")
@@ -785,6 +801,11 @@ module gaiast_globals
     model = a(0)*(1.0 - exp(-a(1)*xx))
    case ("jovanovic_freundlich")
     model = a(0)*(1.0 - exp(-(a(1)*xx)**a(2)))*exp(a(3)*xx**a(2))
+   case ("langmuir_sips")
+    model = (a(0)*a(1)*xx)/(1+a(1)*xx) + (a(2)*a(3)*xx**a(4))/(1+a(3)*xx*a(4))
+   case ("jensen_seaton")
+    ! C. R. C. Jensen and N. A. Seaton, Langmuir, 1996, 12, 2866.
+    model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3)) 
   end select
   return
  end function model
