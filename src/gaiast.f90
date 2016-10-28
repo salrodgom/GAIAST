@@ -720,24 +720,30 @@ module gaiast_globals
  end do nisothermpure1
  end subroutine ReadIsotherms
 ! ...
- subroutine cite(funk)
- implicit none
- character(100),intent(in) :: funk
- write(6,*)'Please, considera citar:'
- select case (funk)
-  case ("langmuir")
-   write(6,*)"I. Langmuir, J. Am. Chem. Soc. 38 (11) (1916) 2221–2295."
-  case ("toth")
-   write(6,*)'Toth, State equations of the solid gas interface layer, Acta Chem. Acad. Hung. 69 (1971) 311–317.'
-  case ("jensen_seaton")
-   write(6,*)'C. R. C. Jensen and N. A. Seaton, Langmuir, 1996, 12, 2866.' 
-  case ("langmuir_freundlich")
-! Also known as the Sips equation
-   write(6,*)'R. Sips, J. Chem. Phys., (1948);   http://dx.doi.org/10.1063/1.1746922'
-   write(6,*)'R. Sips,  J. Chem. Phys. 18, 1024 (1950); http://dx.doi.org/10.1063/1.1747848'
-   write(6,*)'Turiel et al., 2003, DOI: 10.1039/B210712K'
-   write(6,*)'Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001)., 73(19), 4584-4591.'
- end select
+ subroutine cite()
+  implicit none
+  integer           :: iii
+  character(len=80) :: funk
+  write(6,*)'Please, considera citar:'
+  write(6,'(a,6x,a)')'IAST:','A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
+  c01234: do iii=1,ncomponents
+   funk = ajuste(iii)
+   c01235: select case (funk)
+    case ("langmuir")
+     write(6,'(a,1x,i3,a,1x,a)')"Model",iii,":","I. Langmuir, J. Am. Chem. Soc. 38 (11) (1916) 2221–2295."
+    case ("toth")
+     write(6,'(a,1x,i3,a,1x,a)')"Model",iii,":","Toth, Acta Chem. Acad. Hung. 69 (1971) 311–317."
+    case ("jensen_seaton")
+     write(6,'(a,1x,i3,a,1x,a)')"Model",iii,":","C. R. C. Jensen and N. A. Seaton, Langmuir, 1996, 12, 2866."
+    case ("langmuir_freundlich")
+ ! Also known as the Sips equation
+     write(6,'(a,1x,i3)')'Model',iii
+     write(6,*)'R. Sips, J. Chem. Phys., (1948); http://dx.doi.org/10.1063/1.1746922'
+     write(6,*)'R. Sips, J. Chem. Phys. 18, 1024 (1950); http://dx.doi.org/10.1063/1.1747848'
+     write(6,*)'Turiel et al., 2003, DOI: 10.1039/B210712K'
+     write(6,*)'Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001)., 73(19), 4584-4591.'
+   end select c01235
+  end do c01234
  end subroutine cite
 ! 
  subroutine MakeInitPOP(funk,n)
@@ -787,12 +793,6 @@ module gaiast_globals
    case("langmuir")
     model = a(0)*a(1)*xx/(1+a(1)*xx)
    case("langmuir_freundlich")
-! Also known as the Sips equation
-    ! REF. R. Sips, J. Chem. Phys., (1948);   http://dx.doi.org/10.1063/1.1746922
-    ! REF. R. Sips,  J. Chem. Phys. 18, 1024 (1950); http://dx.doi.org/10.1063/1.1747848 
-    ! REF. Turiel et al., 2003, DOI: 10.1039/B210712K
-    ! REF. Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001). Characterization of molecularly imprinted polymers with the Langmuir-Freundlich isotherm. Analytical chemistry, 73(19), 4584-4591.
-    !model = a(0)*a(1)*xx**a(2)/(1.0+a(1)*xx**a(2))
     model = a(0)*a(1)*xx**a(2)/(1.0+a(1)*xx**a(2))
    case("toth") ! f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)
     model = a(0)*a(1)*xx/((1+(a(1)*xx)**(a(2)))**(1.0/a(2)))
@@ -800,9 +800,6 @@ module gaiast_globals
     model = a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
    case("langmuir_freundlich_dualsite")
     model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
-   !case("jensen")!f(x)=K1*x/(1+(K1*x/(alfa*(1+k2*x))**c))**(1/c)
-   ! model = a(0)*xx/(1.0+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3))
-   !model = a(0)*xx/(1+(a(0)*xx/(a(1)*(1+a(2)*xx))**a(3)))**(1.0/a(3))
    case ("dubinin_raduschkevich") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
    case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
@@ -816,7 +813,6 @@ module gaiast_globals
    case ("langmuir_sips")
     model = (a(0)*a(1)*xx)/(1+a(1)*xx) + (a(2)*a(3)*xx**a(4))/(1+a(3)*xx*a(4))
    case ("jensen_seaton")
-    ! C. R. C. Jensen and N. A. Seaton, Langmuir, 1996, 12, 2866.
     model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3)) 
   end select
   return
@@ -851,9 +847,6 @@ module mod_genetic
    new_citizen%genotype = ' '
    do i = 1, 32*np(compound)
     new_citizen%genotype(i:i) = achar(randint(48,49,seed))
-   end do
-   do i = 0,np(compound)-1
-    new_citizen%genotype(i*32+1:i*32+1) = '0'
    end do
    do i = 1,np(compound)
     read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
@@ -1087,7 +1080,6 @@ module mod_genetic
     end if
    end do
    prop = prop / rrr1
-   ! write(6,*)prop(1:)
    ! select 1:
     rrr1 = r4_uniform(0.0,1.0,seed)
     slct1: do i=1,ga_size
@@ -1184,6 +1176,7 @@ program main
  else
    call IAST_binary()
  end if
+ call cite()
  close(111)
  stop ':)'
 end program main

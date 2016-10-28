@@ -2,8 +2,7 @@ ncomp 2
 1.0  jensen_seaton
 1.0  jensen_seaton
 inter 4096
-Rseed 1648666591
-ffit? .true.
+ffit? .false.
 0.152586967       11.0529757       2.86100044E-06  0.874999940    
 0.499999970       10.0000000       1.90734283E-06  0.970020711    
 #Fitness:  0.602383375     Similarity:   4.00000000
