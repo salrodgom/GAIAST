@@ -727,13 +727,17 @@ module gaiast_globals
   write(6,'(a)')     '====================================='
   write(6,'(a)')     'Please consider cite this references:'
   write(6,'(a)')     'GAIAST: S. R.G. Balestra, R. Bueno-Perez, S. Calero. (2016). GAIAST [software]. Zenodo'
-  write(6,'(a)')     '        http://doi.org/10.5281/zenodo.163770'
+  write(6,'(a)')     '        doi: 10.5281/zenodo.163770'
   write(6,'(a)')     'IAST:   A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
   c01234: do iii=1,ncomponents
    funk = ajuste(iii)
    c01235: select case (funk)
     case ("langmuir")
-     write(6,'(a,1x,i3,a,1x,a)')"Model",iii,":","I. Langmuir, J. Am. Chem. Soc. 38 (11) (1916) 2221–2295."
+     write(6,'(a,1x,i3,a,1x,a)')&
+     "Model",iii,":","I. Langmuir, J. Am. Chem. Soc. 38 (11) (1916) 2221–2295."
+    case ("langmuir_dualsite")
+     write(6,'(a,1x,i3,a,1x,a)')&
+     "Model",iii,":","Myers, A. L. (1983). AIChE journal, 29(4), 691-693, doi: 10.1002/aic.690290428"
     case ("toth")
      write(6,'(a,1x,i3,a,1x,a)')"Model",iii,":","Toth, Acta Chem. Acad. Hung. 69 (1971) 311–317."
     case ("jensen_seaton")
@@ -743,8 +747,14 @@ module gaiast_globals
      write(6,'(a,1x,i3)')'Model',iii
      write(6,*)'R. Sips, J. Chem. Phys., (1948); http://dx.doi.org/10.1063/1.1746922'
      write(6,*)'R. Sips, J. Chem. Phys. 18, 1024 (1950); http://dx.doi.org/10.1063/1.1747848'
-     write(6,*)'Turiel et al., 2003, DOI: 10.1039/B210712K'
-     write(6,*)'Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001)., 73(19), 4584-4591.'
+     !write(6,*)'Turiel et al., 2003, DOI: 10.1039/B210712K'
+     !write(6,*)'Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001)., 73(19), 4584-4591.'
+    case("jovanovic")
+     write(6,'(a,1x,i3,a,1x,a)')&
+     "Model",iii,":","Jovanovic, D. S., Kolloid-Z.Z. Polym. 235, 1203 ( 1969 )"
+    case("jovanovic_freundlich")
+     write(6,'(a,1x,i3,a,1x,a)')&
+      "Model",iii,":",'10.1006/jcis.1996.0518 and 10.1016/S0021-9673(97)01096-0'
    end select c01235
   end do c01234
  end subroutine cite

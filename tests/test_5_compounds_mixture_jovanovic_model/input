@@ -1,9 +1,9 @@
 ncomp 4
-1.0 langmuir_dualsite
+1.0 langmuir_dualsite 
 1.0 langmuir_dualsite
 1.0 langmuir_dualsite
 1.0 jovanovic
-inter 1024
+inter 4048
 ffit? .false.
 1.99999881       7.45046114E-09   1.55859733       1.16447314E-04  #Fitness:   4.87164827E-03    Rseed  1958418617
 0.249999851      1.41179612E-06   1.64390922       1.22070291E-04  #Fitness:   8.66267178E-03    Rseed  1857144189

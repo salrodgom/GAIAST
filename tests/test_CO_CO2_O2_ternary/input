@@ -15,7 +15,7 @@ ncomp 3
 1.0  langmuir_dualsite
 1.0  langmuir_dualsite
 # inter: numero de presiones que van a tener las isotermas  de la mezcla
-inter 512
+inter 1024
 # ffit? : valor logico, por defecto .true. :  
 # .true. se procede al ajuste de las isotermas, .false. > Los parametros se toman en un loop que se abre en las lineas siguientes, a linea por componente
 ffit? .false.
@@ -28,7 +28,7 @@ ffit? .false.
 #Fire? .true.
 #0.40
 # temperatura, por defecto 298 K, para aquellos modelos que la necesitan: dubinin_raduschkevich
-RSeed 1225935557
-temp  298.0
+#RSeed 1225935557
+#temp  298.0
 # tol, tolerancia del IAST para considerar que la presion parcial de los componentes esta igualada, por defecto 0.001
-tol   0.001
+#tol   0.001
