@@ -3,3 +3,16 @@ Things that you could improve:
 -It would be helpfully that the output png file would include the name of the models used during the fitting phase. In this way you can run several models of the same mixture and to obtain different files (they do not re-write each other).
 -same with output data files. (these two points should be implemented by each user in its own script)
 
+importante:
+0. Se ha corregido un bug en el ordenadamiento de los sets de parametros en funcion de su error.
+   Ahora hay mas sets de parametros "efectivos" que cuenta en el ajuste.
+
+1. physical_constrains = .true. or .false.
+   .true. Se tienen en cuenta en el ajuste ligaduras entre los parametros de ajustes, segun los modelos publicados.
+   .false. Se realiza un ajuste puramente matematico. El set de parametros que minimiza el error en el ajuste.
+   Por ahora sólo se puede añadir en codigo, "linea 911" de src/gaiast.f90:
+   > physical_constrains = .false. -> physical_constrains = .true.
+
+2. citas:
+   Se ha añadido una seccion en el output que añade las publicaciones de cada modelo.
+   Tambien se añade la cita dle presente codigo para que pueda ser citado.

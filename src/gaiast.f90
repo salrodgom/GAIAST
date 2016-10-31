@@ -146,7 +146,7 @@ module qsort_c_module
  private :: Partition
  contains
  recursive subroutine QsortC(A)
-  real, intent(in out), dimension(:) :: A
+  real(16), intent(in out), dimension(:) :: A
   integer                            :: iq
   if(size(A) > 1) then
      call Partition(A, iq)
@@ -155,11 +155,11 @@ module qsort_c_module
   endif
  end subroutine QsortC
  subroutine Partition(A, marker)
-  real, intent(in out), dimension(:) :: A
+  real(16), intent(in out), dimension(:) :: A
   integer, intent(out)               :: marker
   integer                            :: i, j
-  real                               :: temp
-  real                               :: x
+  real(16)                           :: temp
+  real(16)                           :: x
   x = A(1)
   i= 0
   j= size(A) + 1
@@ -207,6 +207,7 @@ module gaiast_globals
  character(100)             :: line,string,intmethod
  character(5)               :: inpt
  logical                    :: flag = .true., FlagFire = .false.,seed_flag=.true.
+ logical                    :: physical_constrains = .false.
  real,parameter             :: R = 0.008314472 ! kJ / mol / K
  real                       :: T = 298.0
  real                       :: inferior
@@ -254,6 +255,10 @@ module gaiast_globals
    end if
    if(line(1:5)=='tempe') read(line,*)inpt, T
    if(line(1:5)=='InteM') read(line,*)inpt, IntMethod
+   if(line(1:22)=='physically_constrained') then
+    physical_constrains=.true.
+    write(6,'(a)') '[WARN] The fits are physically constrained'
+   end if
    if(line(1:5)=='Fire?') then
      read(line,*)inpt, FlagFire
      if(FlagFire) read(5,*) TolFire
@@ -839,26 +844,28 @@ module mod_genetic
  implicit none
  private
  public fit
- integer,parameter        :: ga_size     = 2**13 ! numero de cromosomas
- real,parameter           :: ga_mutationrate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
- real,parameter           :: ga_eliterate= 0.25, GA_DisasterRate = 0.0000001
- integer,parameter        :: ga_elitists = int( ga_size * ga_eliterate)
- type                     :: typ_ga
-  character(len=32*maxnp) :: genotype
-  real                    :: phenotype(1:maxnp)
-  real                    :: fitness
- end type
- type(typ_ga), pointer    :: parents(:)
- type(typ_ga), pointer    :: children(:)
- type(typ_ga), target     :: pop_alpha( ga_size )
- type(typ_ga), target     :: pop_beta( ga_size )
+ integer,parameter             :: ga_size     = 2**13 ! numero de cromosomas
+ real,parameter                :: ga_mutationrate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
+ real,parameter                :: ga_eliterate= 0.25, GA_DisasterRate = 0.0000001
+ integer,parameter             :: maxlinelength=maxnp*32
+ integer,parameter             :: ga_elitists = int( ga_size * ga_eliterate)
+ type                          :: typ_ga
+  character(len=maxlinelength) :: genotype
+  real                         :: phenotype(1:maxnp)
+  real                         :: fitness
+ end type                     
+ type(typ_ga), pointer         :: parents(:)
+ type(typ_ga), pointer         :: children(:)
+ type(typ_ga), target          :: pop_alpha( ga_size )
+ type(typ_ga), target          :: pop_beta( ga_size )
  contains
 
   type(typ_ga) function new_citizen(compound,seed)
    implicit none
    integer :: i,compound,seed
    new_citizen%genotype = ' '
-   do i = 1, 32*np(compound)
+   
+   do i = 1,32*np(compound)
     new_citizen%genotype(i:i) = achar(randint(48,49,seed))
    end do
    do i = 1,np(compound)
@@ -906,87 +913,92 @@ module mod_genetic
    real                :: a(0:np(compound)-1),xx,yy
    character(len=100)  :: funk
    logical             :: flagzero = .false.
-   real                :: infinite = 50,penalty
+   !logical             :: physical_constrains = .false.
+   real                :: infinite = 50.0,penalty = 0.0
    funk = ajuste(compound)
    do i = 0,np(compound)-1
     a(i) = phenotype(i+1)
    end do
-   select case (funk)
-    case ('langmuir')
-     if(a(0)<0.0.or.a(1)<=0.0)then  
-      ! constrains:
-      ! a>0, b>0
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if
-    case ('langmuir_dualsite')
-     if(a(0)<0.0.or.a(1)<0.0 .or.&
-        a(2)<0.0.or.a(3)<0.0 ) then
-      ! constrains:
-      ! a>0, b>0, c>0, d>0
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if
-    case ('toth')
-     if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
-      ! constrains:
-      ! a>0 ; b>0 ; 0 < c < 1
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if
-    case ('langmuir_freundlich')
-     if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
-      ! constrains:
-      ! a>0 ; b>0 ; 0 < c < 1
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if
-    case ('jovanovic_freundlich')
-     if(a(0)<0.0.or.a(2)<0.or.a(2)>1.0)then
-      ! constrains:
-      ! a>0 ; 0 < c < 1
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if
-    case ('langmuir_freundlich_dualsite')
-     if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0 .or.&
-        a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.a(5)>1.0 )then
-      ! constrains:
-      ! a>0 ; b>0 ; 0 < c < 1
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if
-    case ('jensen_seaton')
-    !model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3))
-     if( a(0)<0 .or. a(1)<0 .or. a(2)<0.or.a(3)<0 ) then
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if 
-    case ('langmuir_sips')
-     if( a(0)<0.0.or.a(1)<0.0.or.a(4)<0.or.a(4)>1.0 .or.&
-         a(2)<0.0.or.a(3)<0.0 )then
-      ! constrains:
-      ! a>0 ; b>0 ; 0 < c < 1
-      penalty = infinite
-     else
-      penalty = 0.0
-     end if
-    case default
-     penalty = 0.0
-   end select
+   phys_constrains: if ( physical_constrains ) then
+     select case (funk)
+      case ('langmuir')
+       if(a(0)<0.0.or.a(1)<=0.0)then  
+        ! constrains:
+        ! a>0, b>0
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ('langmuir_dualsite')
+       if(a(0)<0.0.or.a(1)<0.0 .or.&
+          a(2)<0.0.or.a(3)<0.0 ) then
+        ! constrains:
+        ! a>0, b>0, c>0, d>0
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ('toth')
+       if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
+        ! constrains:
+        ! a>0 ; b>0 ; 0 < c < 1
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ('langmuir_freundlich')
+       if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
+        ! constrains:
+        ! a>0 ; b>0 ; 0 < c < 1
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ('jovanovic_freundlich')
+       if(a(0)<0.0.or.a(2)<0.or.a(2)>1.0)then
+        ! constrains:
+        ! a>0 ; 0 < c < 1
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ('langmuir_freundlich_dualsite')
+       if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0 .or.&
+          a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.a(5)>1.0 )then
+        ! constrains:
+        ! a>0 ; b>0 ; 0 < c < 1
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ('jensen_seaton')
+      !model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3))
+       if( a(0)<0 .or. a(1)<0 .or. a(2)<0.or.a(3)<0 ) then
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if 
+      case ('langmuir_sips')
+       if( a(0)<0.0.or.a(1)<0.0.or.a(4)<0.or.a(4)>1.0 .or.&
+           a(2)<0.0.or.a(3)<0.0 )then
+        ! constrains:
+        ! a>0 ; b>0 ; 0 < c < 1
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case default
+       penalty = 0.0
+     end select
+   end if phys_constrains
    fitness = penalty
    do i = 1, npress(compound)
     xx = datas(1,compound,i)
     yy = datas(2,compound,i)
     fitness = fitness + 0.5*( yy - model(a,np(compound),xx,funk) )**2
    end do
+   if(isnan(fitness)) fitness      = 99999999.999999
+   if(fitness==0.0000000000)fitness= 99999999.999999
    return
   end function Fitness
 
@@ -1004,7 +1016,7 @@ module mod_genetic
    wnowasteparam = parents(k)%phenotype
    wfitness = parents(k)%fitness
    write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f20.10,1x,a,1x,f20.10,1x,a)')compound,kk,wnowaste(1:32),&
-        wnowasteparam(1),wfitness,'[Fitness]',kkk,'[Similarity]'
+        wnowasteparam(1),wfitness,'[Fitness]',kkk,'[Similarity]' !,k
    do i=2,np(compound)
     write(6,'(9x,a32,1x,e25.12)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i)
    end do
@@ -1030,15 +1042,15 @@ module mod_genetic
   subroutine SortByFitness()
    type(typ_ga)             ::  sorted(1:ga_size)
    integer                  ::  k,i
-   real                     ::  ftnss(1:ga_size)
+   real(16)                 ::  ftnss(1:ga_size)
    do k=1,ga_size
-    ftnss(k)=parents(k)%fitness
-    if(isnan(parents(k)%fitness)) ftnss(k) = 9999999999.99
+    ftnss(k)=dble(parents(k)%fitness)
+    if(isnan(parents(k)%fitness)) ftnss(k) = 9999999999.d99
    end do
    call QsortC( ftnss )
-   exter:do k=1,ga_size
+   exter:do k=1,ga_size ! <- ordered
     inter:do i=1,ga_size
-    if( parents(i)%fitness== ftnss(k))then
+    if( dble(parents(i)%fitness) == ftnss(k))then
       sorted(k) = parents(i)
       cycle inter
     end if
@@ -1213,9 +1225,12 @@ module mod_genetic
    converge: do while (.true.)
     ii=ii+1
     call SortByFitness()
+    !do i=1,ga_size
+     call WriteCitizen(1,ii,eps,compound)
+    !end do
+    !STOP
     diff = eps
     eps = Biodiversity( compound )
-    call WriteCitizen(1,ii,eps,compound)
     fire: if ( FlagFire ) then
      if ( ii >= minstep .and. parents(1)%fitness <= TolFire ) exit converge
     else
@@ -1244,10 +1259,10 @@ program main
  use mod_random
  use gaiast_globals
  use mod_genetic
- use iso_fortran_env
- print '(4a)', 'This file was compiled by ', &
-       compiler_version(), ' using the options ', &
-       compiler_options()
+ !use iso_fortran_env
+ !print '(4a)', 'This file was compiled by ', &
+ !      compiler_version(), ' using the options ', &
+ !      compiler_options()
  print '(a)',' ',&
 "#     ________    _____   .___    _____     ____________________  ",&
 "#    /  _____/   /  _  \  |   |  /  _  \   /   _____/\__    ___/  ",&

@@ -15,7 +15,7 @@ all:
 	make clean
 	make plot
 execute:
-	./gaiast < input
+	time ./gaiast < input
 plot:
 	gnuplot ${GNUPLOT_SCRIPT} ; display iast.png
 clean:;         @rm -f *.o *.mod gaiast isotermaN.dat

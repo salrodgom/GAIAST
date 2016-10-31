@@ -1,6 +1,7 @@
+physically_constrained
 ncomp 2
-1.0 langmuir_sips 
-1.0 langmuir_sips
+1.0 langmuir
+1.0 langmuir
 inter 4096
 RSeed 1185874545
 ffit? .true.
