@@ -724,8 +724,10 @@ module gaiast_globals
   implicit none
   integer           :: iii
   character(len=80) :: funk
-  write(6,*)'Please, considera citar:'
-  write(6,'(a,6x,a)')'IAST:','A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
+  write(6,'(a)')     '====================================='
+  write(6,'(a)')     'Please consider cite this references:'
+  write(6,'(a)')     'GAIAST: Salvador Rodríguez Gómez. (2016). GAIAST [software]. Zenodo. http://doi.org/10.5281/zenodo.163770'
+  write(6,'(a)')     'IAST:   A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
   c01234: do iii=1,ncomponents
    funk = ajuste(iii)
    c01235: select case (funk)
@@ -876,19 +878,13 @@ module mod_genetic
    funk = ajuste(compound)
    do i = 0,np(compound)-1
     a(i) = phenotype(i+1)
-    !if (a(i) == 0.0) k=k+1
    end do
-   !if(k==np(compound)) STOP
    fitness = 0.0
    do i = 1, npress(compound)
     xx = datas(1,compound,i)
     yy = datas(2,compound,i)
     fitness = fitness + 0.5*( yy - model(a,np(compound),xx,funk) )**2
    end do
-   !if( fitness == 0.0 ) fitness = infinite
-   !else
-   ! fitness = infinite
-   !end if
    return
   end function Fitness
 
@@ -947,6 +943,7 @@ module mod_genetic
     end do inter
    end do exter
    parents=sorted
+   return
   end subroutine SortByFitness
 
   real function Biodiversity( compound )
@@ -986,9 +983,7 @@ module mod_genetic
     ipos = randint(32*(i-1)+1,32*i,seed)
     macrophage%genotype(ipos:ipos) = achar(randint(48,49,seed))
    end do
-   !do i = 0,np(Compound)
-   ! macrophage%genotype(i*32+1:i*32+1) = '0'
-   !end do
+   return
   end subroutine Mutate
 
   subroutine NuclearDisaster(Compound)
@@ -1000,11 +995,9 @@ module mod_genetic
     do j=1,32*np(compound)
      Children%genotype(j:j) = achar(randint(48,49,seed))
     end do
-    !do j = 0,np(compound)-1
-    ! Children%genotype(j*32+1:j*32+1) = '0'
-    !end do
     call UpdateCitizen(Children(i),Compound)
    end do
+   return
   end subroutine NuclearDisaster
 
   subroutine Swap()
@@ -1015,10 +1008,12 @@ module mod_genetic
        parents => pop_alpha
        children => pop_beta
    end if
+   return
   end subroutine Swap
 
   subroutine Elitism()
    children(:GA_ELITISTS) = parents(:GA_ELITISTS)
+   return
   end subroutine
 
   subroutine Mate(compound)
@@ -1048,6 +1043,7 @@ module mod_genetic
    do i = 1, ga_size
     call UpdateCitizen(children(i),compound)
    end do
+   return
   end subroutine Mate
 
   subroutine choose_randomly(j1,j2)
