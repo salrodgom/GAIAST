@@ -726,7 +726,8 @@ module gaiast_globals
   character(len=80) :: funk
   write(6,'(a)')     '====================================='
   write(6,'(a)')     'Please consider cite this references:'
-  write(6,'(a)')     'GAIAST: Salvador Rodríguez Gómez. (2016). GAIAST [software]. Zenodo. http://doi.org/10.5281/zenodo.163770'
+  write(6,'(a)')     'GAIAST: S. R.G. Balestra, R. Bueno-Perez, S. Calero. (2016). GAIAST [software]. Zenodo'
+  write(6,'(a)')     '        http://doi.org/10.5281/zenodo.163770'
   write(6,'(a)')     'IAST:   A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
   c01234: do iii=1,ncomponents
    funk = ajuste(iii)
@@ -1214,7 +1215,7 @@ module mod_genetic
      else
       kk = 0
      end if
-     if ( ii >= maxstep .or. kk >= 5 ) exit converge
+     if ( ii >= maxstep .or. kk >= 10 ) exit converge
     end if fire
     call Mate(compound)
     call Swap()
@@ -1246,7 +1247,10 @@ program main
 "#           \/         \/              \/         \/              ",&
 " "
  call read_input()
- if (seed_flag) call init_random_seed(seed)
+ if (seed_flag) then
+  call init_random_seed(seed)
+  seed_flag=.false.
+ end if
  write(6,'("Random Seed:",1x,i10)') seed
  call ReadIsotherms()
  if(flag)then
@@ -1265,5 +1269,6 @@ program main
  end if
  call cite()
  close(111)
+ write(6,'(a)')'====================================='
  stop ':)'
 end program main
