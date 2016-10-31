@@ -858,7 +858,8 @@ module mod_genetic
 
   subroutine UpdateCitizen( axolotl ,compound )
    implicit none
-   integer                     :: compound,i
+   integer                     :: compound,i,GA_ELITISTS
+   real                        :: infinite = 0.0
    type(typ_ga), intent(inout) :: axolotl
    do i = 1,np(compound)
     read(axolotl%genotype(32*(i-1)+1:32*i),'(b32.32)') axolotl%phenotype(i)
@@ -867,6 +868,26 @@ module mod_genetic
    return
   end subroutine UpdateCitizen
 
+!  real function Fitness(phenotype,compound)
+!   implicit none
+!   real, intent(in)    :: phenotype(maxnp)
+!   integer             :: i,compound,k = 0
+!   real                :: a(0:np(compound)-1),xx,yy
+!   character(len=100)  :: funk
+!   logical             :: flagzero = .false.
+!   real                :: infinite = HUGE(40843542)
+!!   funk = ajuste(compound)
+!   do i = 0,np(compound)-1
+!    a(i) = phenotype(i+1)
+!   end do
+!   fitness = 0.0
+!   do i = 1, npress(compound)
+!    xx = datas(1,compound,i)
+!    yy = datas(2,compound,i)
+!    fitness = fitness + 0.5*( yy - model(a,np(compound),xx,funk) )**2
+!   end do
+!   return
+!  end function Fitness
   real function Fitness(phenotype,compound)
    implicit none
    real, intent(in)    :: phenotype(maxnp)
@@ -874,12 +895,82 @@ module mod_genetic
    real                :: a(0:np(compound)-1),xx,yy
    character(len=100)  :: funk
    logical             :: flagzero = .false.
-   real                :: infinite = HUGE(40843542)
+   real                :: infinite = 50,penalty
    funk = ajuste(compound)
    do i = 0,np(compound)-1
     a(i) = phenotype(i+1)
    end do
-   fitness = 0.0
+   select case (funk)
+    case ('langmuir')
+     if(a(0)<0.0.or.a(1)<=0.0)then  
+      ! constrains:
+      ! a>0, b>0
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if
+    case ('langmuir_dualsite')
+     if(a(0)<0.0.or.a(1)<0.0 .or.&
+        a(2)<0.0.or.a(3)<0.0 ) then
+      ! constrains:
+      ! a>0, b>0, c>0, d>0
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if
+    case ('toth')
+     if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
+      ! constrains:
+      ! a>0 ; b>0 ; 0 < c < 1
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if
+    case ('langmuir_freundlich')
+     if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
+      ! constrains:
+      ! a>0 ; b>0 ; 0 < c < 1
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if
+    case ('jovanovic_freundlich')
+     if(a(0)<0.0.or.a(2)<0.or.a(2)>1.0)then
+      ! constrains:
+      ! a>0 ; 0 < c < 1
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if
+    case ('langmuir_freundlich_dualsite')
+     if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0 .or.&
+        a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.a(5)>1.0 )then
+      ! constrains:
+      ! a>0 ; b>0 ; 0 < c < 1
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if
+    case ('jensen_seaton')
+    !model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3))
+     if( a(0)<0 .or. a(1)<0 .or. a(2)<0.or.a(3)<0 ) then
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if 
+    case ('langmuir_sips')
+     if( a(0)<0.0.or.a(1)<0.0.or.a(4)<0.or.a(4)>1.0 .or.&
+         a(2)<0.0.or.a(3)<0.0 )then
+      ! constrains:
+      ! a>0 ; b>0 ; 0 < c < 1
+      penalty = infinite
+     else
+      penalty = 0.0
+     end if
+    case default
+     penalty = 0.0
+   end select
+   fitness = penalty
    do i = 1, npress(compound)
     xx = datas(1,compound,i)
     yy = datas(2,compound,i)
@@ -1133,7 +1224,7 @@ module mod_genetic
     param( compound,i ) = children(1)%phenotype(i+1)
    end do
    write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
-   write(111,*)'#','Fitness:',fit0,'Similarity:',eps
+   write(111,*)'#','Fitness:',fit0,'Similarity:',eps,'Rseed',seed
    return
   end subroutine fit
 end module mod_genetic
