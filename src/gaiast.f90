@@ -460,7 +460,7 @@ module gaiast_globals
   calc: do while (k<=ncomponents.and.CalculatePressures)
 ! {{ interpolation and parameters from k-compound
    funk = ajuste( k )
-   if(funk=='langmuir')mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
+   !if(funk=='langmuir') mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
    n = np(k)
    allocate(apar(0:n-1))
    do j = 0, n-1
@@ -754,6 +754,11 @@ module gaiast_globals
      write(6,*)'R. Sips, J. Chem. Phys. 18, 1024 (1950); http://dx.doi.org/10.1063/1.1747848'
      !write(6,*)'Turiel et al., 2003, DOI: 10.1039/B210712K'
      !write(6,*)'Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001)., 73(19), 4584-4591.'
+    case ("langmuir_sips")
+     write(6,'(a,1x,i3)')'Model',iii
+     write(6,'(8x,a)')"I. Langmuir, J. Am. Chem. Soc., 1916, 38(11), 2221–2295."
+     write(6,'(8x,a)')"A. L. Myers, AIChE journal, 1983, 29(4), 691-693, doi: 10.1002/aic.690290428"
+     write(6,'(8x,a)')'R. Sips, J. Chem. Phys., 1948 ; doi:http://dx.doi.org/10.1063/1.1746922'
     case("jovanovic")
      write(6,'(a,1x,i3,a,1x,a)')&
      "Model",iii,":","Jovanovic, D. S., Kolloid-Z.Z. Polym. 235, 1203 ( 1969 )"
