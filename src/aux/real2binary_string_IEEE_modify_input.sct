@@ -1,0 +1,4 @@
+#!/bin/bash
+cat $1 | while read line ; do
+ ./real2binary_string_IEEE $line
+done
