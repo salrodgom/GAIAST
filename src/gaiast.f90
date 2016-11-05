@@ -203,11 +203,13 @@ module gaiast_globals
  integer,parameter          :: maxnp = 10, maxcompounds = 10, maxdata = 1000
  real,target                :: datas(2,maxcompounds,maxdata),f(maxdata)
  real,pointer               :: x(:),y(:),alldat(:,:)
- character(100),allocatable :: ajuste(:)
+ character(100),allocatable      :: ajuste(:)
+ character(32*maxnp),allocatable :: string_IEEE(:)
  character(100)             :: line,string,intmethod
  character(5)               :: inpt
  logical                    :: flag = .true., FlagFire = .false.,seed_flag=.true.
- logical                    :: physical_constrains = .false.
+ logical                    :: physical_constrains = .false., range_flag =.true.
+ logical                    :: refit_flag = .false.
  real,parameter             :: R = 0.008314472 ! kJ / mol / K
  real                       :: T = 298.0
  real                       :: inferior
@@ -223,6 +225,7 @@ module gaiast_globals
     read(line,*)inpt,ncomponents
     allocate(ajuste(ncomponents),concy(ncomponents))
     allocate(npress(ncomponents),np(ncomponents))
+    allocate(string_IEEE(ncomponents))
     do ii=1,ncomponents
      read(5,*)concy(ii),ajuste(ii)
      string = ajuste(ii)
@@ -244,11 +247,33 @@ module gaiast_globals
     end if
     cycle read_input_do
    end if
+   if(line(1:5)=='refit') then
+    read(line,*)inpt,refit_flag
+    if(refit_flag)then
+    do ii=1,ncomponents
+     do j=1,np(ii)
+      read(5,'(a32)')  string
+      read(string,'(a32)') string_IEEE(ii)(32*(j-1)+1:32*j)
+      !write(6,'(a32)') string
+     end do
+     write(6,'(a)') string_IEEE(ii)
+    end do
+    else 
+     do ii=1,ncomponents
+      string_IEEE(ii)=' '
+     end do
+    end if
+   end if
    if(line(1:5)=='inter') then
      read(line,*)inpt,intervalos
      allocate(pi(ncomponents,0:intervalos),iso(ncomponents,0:intervalos))
    end if
    if(line(1:5)=='toler') read(line,*)inpt, Tol
+   if(line(1:5)=='Range')then
+    read(line,*)inpt, inferior, superior
+    range_flag = .false.
+    write(6,'(a)')'[WARN] Fugacity range specified'
+   end if
    if(line(1:5)=='RSeed') then
     seed_flag=.false.
     read(line,*)inpt, seed
@@ -275,20 +300,22 @@ module gaiast_globals
   integer            :: ib,jb,compound
   character(len=100) :: funk
   s1 = 0.0
-  superior = 0.0
-  inferior = 1.0e12
-  do ib = 1,ncomponents
-   do jb = 1,npress(ib)
-    if( datas(1,ib,jb) >= superior) superior = datas(1,ib,jb)
-    if( datas(1,ib,jb) <= inferior) inferior = datas(1,ib,jb)
+  if (range_flag) then
+   superior = 0.0
+   inferior = 1.0e30
+   do ib = 1,ncomponents
+    do jb = 1,npress(ib)
+     if( datas(1,ib,jb) >= superior) superior = datas(1,ib,jb)
+     if( datas(1,ib,jb) <= inferior) inferior = datas(1,ib,jb)
+    end do
    end do
-  end do
-! ...
-  write(6,*)'Inf:',inferior
-  write(6,*)'Sup:',superior
-! ...
-  superior = log( superior )
-  inferior = log( inferior )
+  end if
+!  ...
+   write(6,*)'Inf:',inferior
+   write(6,*)'Sup:',superior
+!  ...
+   superior = log( superior )
+   inferior = log( inferior )
   dx = real((superior-inferior)/real(intervalos))   ! log-space
 ! ...
   open(222,file='curves.txt')
@@ -790,6 +817,8 @@ module gaiast_globals
    n=4
   case ("langmuir_freundlich_dualsite")
    n=6
+  case ("langmuir_freundlich_3order")
+   n=9
   case ("dubinin_astakhov")
    n=4
   case ("jovanovic_smoothed")
@@ -823,6 +852,9 @@ module gaiast_globals
     model = a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
    case("langmuir_freundlich_dualsite")
     model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
+   case("langmuir_freundlich_3order")
+    model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5)) + &
+            a(6)*a(7)*xx**a(8)/(1+a(7)*xx**a(8)) 
    case ("dubinin_raduschkevich") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
    case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
@@ -869,7 +901,6 @@ module mod_genetic
    implicit none
    integer :: i,compound,seed
    new_citizen%genotype = ' '
-   
    do i = 1,32*np(compound)
     new_citizen%genotype(i:i) = achar(randint(48,49,seed))
    end do
@@ -877,6 +908,7 @@ module mod_genetic
     read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
    end do
    new_citizen%fitness = fitness( new_citizen%phenotype,compound)
+   return
   end function new_citizen
 
   subroutine UpdateCitizen( axolotl ,compound )
@@ -970,14 +1002,23 @@ module mod_genetic
       case ('langmuir_freundlich_dualsite')
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0 .or.&
           a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.a(5)>1.0 )then
+       !if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
+       !   a(3)<0.0.or.a(4)<0.0.or.a(5)<0 )then
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
         penalty = infinite
        else
         penalty = 0.0
        end if
+      case ('langmuir_freundlich_3order')
+       if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
+          a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.&
+          a(6)<0.0.or.a(7)<0.0.or.a(8)<0)then
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
       case ('jensen_seaton')
-      !model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3))
        if( a(0)<0 .or. a(1)<0 .or. a(2)<0.or.a(3)<0 ) then
         penalty = infinite
        else
@@ -1018,7 +1059,9 @@ module mod_genetic
    end do
    ! ...
    wnowaste = parents(k)%genotype
-   wnowasteparam = parents(k)%phenotype
+   do i=1,np(compound)
+    wnowasteparam(i) = parents(k)%phenotype(i)
+   end do
    wfitness = parents(k)%fitness
    write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f20.10,1x,a,1x,f20.10,1x,a)')compound,kk,wnowaste(1:32),&
         wnowasteparam(1),wfitness,'[Fitness]',kkk,'[Similarity]' !,k
@@ -1226,6 +1269,17 @@ module mod_genetic
    pop_alpha = [(new_citizen(compound,seed), i = 1,ga_size)]
    parents =>  pop_alpha
    children => pop_beta
+   if(refit_flag)then
+    do i = 1, 10
+     parents(i)%genotype=string_IEEE(compound)
+     children(i)%genotype=string_IEEE(compound)
+     call UpdateCitizen(parents(i),compound)
+     call UpdateCitizen(children(i),compound)
+    end do
+    call Mate(compound)
+    call Swap()
+    call SortByFitness()
+   end if
    call WriteCitizen(1,ii,eps,compound)
    converge: do while (.true.)
     ii=ii+1
@@ -1249,6 +1303,7 @@ module mod_genetic
     end if fire
     call Mate(compound)
     call Swap()
+    !call SortByFitness()
     fit0 = parents(1)%fitness
    end do converge
    do i = 0, np( compound )-1

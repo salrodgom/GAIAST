@@ -16,6 +16,8 @@ set yrange [0:]
 set xrange [1e-1:]
 plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'C_2H_6 Own GCMC 298K',\
      'isoterma2.dat' w p pt 6 lc rgb 'blue' t 'C_2H_4 Own GCMC 298K',\
+     'test_jurn/isoterma1.dat' u ($1/1000):2 w p pt 6 lc rgb '#FF1493'   t 'C_2H_6 Jurn GCMC 298K',\
+     'test_jurn/isoterma2.dat' u ($1/1000):2 w p pt 6 lc rgb '#1E90FF'   t 'C_2H_4 Jurn GCMC 298K',\
      'curves.txt' u 1:2 w l lt 1 lc rgb 'red'   notitle,\
      'curves.txt' u 4:5 w l lt 1 lc rgb 'blue' notitle,\
      'ethene-303-jurn-dubbeldam-EXP.txt' u ($1/1000):2 w p pt 7 ps 1 lc rgb 'blue' t 'C_2H_4 Jurn EXP 303K',\
