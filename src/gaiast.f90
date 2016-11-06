@@ -240,7 +240,7 @@ module gaiast_globals
    if(line(1:5)=='ffit?')then
     read(line,*)inpt,flag
     if(flag.eqv..false.)then
-     write(6,*)'Fit is already done'
+     write(6,*)'[WARN] Fit is already done'
      readparameter: do ii=1,ncomponents
       read(5,*)(param(ii,j),j=0,np(ii)-1)
      end do readparameter
@@ -248,13 +248,13 @@ module gaiast_globals
     cycle read_input_do
    end if
    if(line(1:5)=='refit') then
+    write(6,*)'[WARN] Refitting parameters'
     read(line,*)inpt,refit_flag
     if(refit_flag)then
     do ii=1,ncomponents
      do j=1,np(ii)
       read(5,'(a32)')  string
       read(string,'(a32)') string_IEEE(ii)(32*(j-1)+1:32*j)
-      !write(6,'(a32)') string
      end do
      write(6,'(a)') string_IEEE(ii)
     end do
@@ -1270,7 +1270,7 @@ module mod_genetic
    parents =>  pop_alpha
    children => pop_beta
    if(refit_flag)then
-    do i = 1, 10
+    do i = 1, 2
      parents(i)%genotype=string_IEEE(compound)
      children(i)%genotype=string_IEEE(compound)
      call UpdateCitizen(parents(i),compound)
