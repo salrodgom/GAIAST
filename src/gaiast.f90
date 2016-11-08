@@ -757,10 +757,12 @@ module gaiast_globals
   integer           :: iii
   character(len=80) :: funk
   write(6,'(a)')     '====================================='
-  write(6,'(a)')     'Please consider cite this references:'
+  write(6,'(a)')     'If you are using GAIAST and would like to cite it, then for GAIAST: '
   write(6,'(a)')     'GAIAST: S. R.G. Balestra, R. Bueno-Perez, S. Calero. (2016). GAIAST [software]. Zenodo'
   write(6,'(a)')     '        doi: 10.5281/zenodo.163770'
-  write(6,'(a)')     'IAST:   A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
+  write(6,'(a)')     'For the IAST theory:'
+  write(6,'(a)')     '        A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
+  write(6,'(a)')     'For the isotherms models:'
   c01234: do iii=1,ncomponents
    funk = ajuste(iii)
    c01235: select case (funk)

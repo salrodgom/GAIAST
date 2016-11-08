@@ -47,8 +47,8 @@ char *fmt_binstr (unsigned long n, unsigned char sz, unsigned char szs, char sep
     unsigned char i;
     for (i = 0; i < sz; i++) {
         p--;
-        if (i > 0 && szs > 0 && i % szs == 0)
-            *p-- = sep;
+ //       if (i > 0 && szs > 0 && i % szs == 0)
+ //           *p-- = sep;
         *p = (n >> i & 1) ? '1' : '0';
     }
     return p;
