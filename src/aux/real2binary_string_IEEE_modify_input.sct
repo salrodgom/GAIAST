@@ -1,5 +1,0 @@
-#!/bin/bash
-gcc real2binary_string_IEEE.c -o real2binary_string_IEEE
-cat $1 | while read line ; do
- ./real2binary_string_IEEE $line
-done
