@@ -1,3 +1,8 @@
+! GAIAST
+! Salvador Rodriguez Gomez
+! Rocio Bueno Perez
+! Sofia Calero Diaz
+! Wednesday, 09, November
 module mod_random
 ! module for pseudo random numbers
  implicit none
