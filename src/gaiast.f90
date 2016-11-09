@@ -763,8 +763,8 @@ module gaiast_globals
   character(len=80) :: funk
   write(6,'(a)')     '====================================='
   write(6,'(a)')     'If you are using GAIAST and would like to cite it, then for GAIAST: '
-  write(6,'(a)')     'GAIAST: S. R.G. Balestra, R. Bueno-Perez, S. Calero. (2016). GAIAST [software]. Zenodo'
-  write(6,'(a)')     '        doi: 10.5281/zenodo.163770'
+  write(6,'(a)')     'GAIAST: 1. Salvador Rodríguez-Gómez Balestra, Rocio Bueno-Perez, Sofia Calero (2016) GAIAST, Zenodo'
+  write(6,'(a)')     '        doi: 10.5281/zenodo.165844'
   write(6,'(a)')     'For the IAST theory:'
   write(6,'(a)')     '        A. L. Myers and J. M. Prausnitz, AIChE J., Thermodynamics of mixed-gas adsorption, 1965, 11, 121.'
   write(6,'(a)')     'For the isotherms models:'
