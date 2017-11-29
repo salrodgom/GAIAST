@@ -1,14 +1,14 @@
 ! GAIAST
-! Salvador Rodriguez Gomez
-! Rocio Bueno Perez
-! Sofia Calero Diaz
-! Wednesday, 09, November
+! Salvador Rodriguez-Gomez
+! Rocio Bueno-Perez
+! Sofia Calero-Diaz
+! Wednesday, 09, November, 2016
 module mod_random
 ! module for pseudo random numbers
  implicit none
  private
  public init_random_seed, randint, r4_uniform
-contains
+ contains
  subroutine init_random_seed(seed)
   implicit none
   integer, intent(out) :: seed
@@ -50,34 +50,21 @@ contains
   if(seed == i4_huge) seed = seed-1
   return
  end subroutine init_random_seed
-
+!
  integer function randint(i,j,seed)
-  real               ::  a,b
-  integer,intent(in) ::  i,j,seed
-  a = real(i)
-  b = real(j)
-  randint=int(r4_uniform(a,b+1.0,seed))
+  integer,intent(in) :: i,j,seed
+  real               :: r
+  CALL RANDOM_NUMBER(r)
+  randint=int(r*(j+1-i))+i
  end function randint
-
- real function r4_uniform(b1,b2,seed)
+! 
+ real function r4_uniform(x,y,seed)
   implicit none
-  real b1,b2
-  integer i4_huge,k,seed
-  parameter (i4_huge=2147483647)
-  if(seed == 0) then
-   write(*,'(b1)')' '
-   write(*,'(b1)')'R4_UNIFORM - Fatal error!'
-   write(*,'(b1)')'Input value of SEED = 0.'
-   stop '[ERROR] Chiquitan chiquititan tan tan &
-  &   Que tun pan pan que tun pan que tepe tepe &
-  &   Pan pan pan que tun pan que pin '
-  end if
-  k=seed/127773
-  seed=16807*(seed-k*17773)-k*2836
-  if(seed<0) then
-    seed=seed+i4_huge
-  endif
-  r4_uniform=b1+(b2-b1)*real(dble(seed)* 4.656612875D-10)
+  real,intent(in)    :: x,y 
+  real               :: r
+  integer,intent(in) :: seed
+  CALL RANDOM_NUMBER(r)
+  r4_uniform=(r*(y-x))+x
   return
  end function r4_uniform
 end module
@@ -847,34 +834,34 @@ module gaiast_globals
   real,intent(in)           :: xx
   character(100),intent(in) :: funk
   select case (funk)
-   case("freundlich")
+   case("freundlich","f")
     model = a(0)*xx**a(1)
-   case("langmuir")
+   case("langmuir","l")
     model = a(0)*a(1)*xx/(1+a(1)*xx)
-   case("langmuir_freundlich")
+   case("langmuir_freundlich","lf")
     model = a(0)*a(1)*xx**a(2)/(1.0+a(1)*xx**a(2))
-   case("toth") ! f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)
+   case("toth","t") ! f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)
     model = a(0)*a(1)*xx/((1+(a(1)*xx)**(a(2)))**(1.0/a(2)))
-   case("langmuir_dualsite")
+   case("langmuir_dualsite","l2")
     model = a(0)*a(1)*xx/(1+a(1)*xx) + a(2)*a(3)*xx/(1.0+a(3)*xx)
-   case("langmuir_freundlich_dualsite")
+   case("langmuir_freundlich_dualsite","lf2")
     model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
-   case("langmuir_freundlich_3order")
+   case("langmuir_freundlich_3order","lf3")
     model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5)) + &
             a(6)*a(7)*xx**a(8)/(1+a(7)*xx**a(8)) 
-   case ("dubinin_raduschkevich") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
+   case ("dubinin_raduschkevich","dr") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
-   case ("dubinin_astakhov")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
+   case ("dubinin_astakhov","da")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
-   case ("jovanovic_smoothed")
+   case ("jovanovic_smoothed","js")
     model = a(0)*(1.0 - exp(-a(1)*xx))*exp(-a(2)*xx)
-   case ("jovanovic")
+   case ("jovanovic","j")
     model = a(0)*(1.0 - exp(-a(1)*xx))
-   case ("jovanovic_freundlich")
+   case ("jovanovic_freundlich","jf")
     model = a(0)*(1.0 - exp(-(a(1)*xx)**a(2)))*exp(a(3)*xx**a(2))
-   case ("langmuir_sips")
+   case ("langmuir_sips","ls")
     model = (a(0)*a(1)*xx)/(1+a(1)*xx) + (a(2)*a(3)*xx**a(4))/(1+a(3)*xx*a(4))
-   case ("jensen_seaton")
+   case ("jensen_seaton","jsn")
     model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3)) 
   end select
   return
@@ -906,11 +893,15 @@ module mod_genetic
 
   type(typ_ga) function new_citizen(compound,seed)
    implicit none
-   integer :: i,compound,seed
+   integer :: i,compound,seed,j,k
    new_citizen%genotype = ' '
    do i = 1,32*np(compound)
+    !j=randint(48,49,seed)
+    !write(6,*)j,achar(j)
     new_citizen%genotype(i:i) = achar(randint(48,49,seed))
    end do
+   !stop
+   !write(6,'(a)') new_citizen%genotype
    do i = 1,np(compound)
     read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
    end do
@@ -1121,13 +1112,24 @@ module mod_genetic
    character(len=32*np(compound)) :: str1,str2
    integer                        :: k
    character(len=20)              :: mode = 'Superficial'
+   logical                        :: flag = .true.
+   real                           :: error_d = 1e-3
    select case (mode)
     case('Superficial')
      do k = 1, ga_size
       do j = k+1,ga_size
-        if(children(k)%genotype == children(j)%genotype) then
-         Biodiversity = Biodiversity + 1.0 /real(ga_size * ga_size)
-        end if
+      !if(children(k)%genotype == children(j)%genotype) then
+      ! Biodiversity = Biodiversity + 1.0 /real(ga_size * ga_size)
+      !end if
+       dbio: do i = 1,np(compound)
+        bio: if( abs(children(k)%phenotype(i) - children(j)%phenotype(i)) <= error_d )then
+         flag = .true.
+         exit dbio
+        end if bio
+       end do dbio
+       if( flag ) then
+        Biodiversity = Biodiversity + 1.0 /real(ga_size * ga_size)
+       end if
       end do
      end do
      Biodiversity = 1.0/(Biodiversity)
@@ -1268,7 +1270,7 @@ module mod_genetic
   subroutine Fit(Compound,Seed)
    implicit none
    integer,intent(in) :: Compound, Seed
-   integer,parameter  :: maxstep = 1000, minstep = 10
+   integer,parameter  :: maxstep = 100, minstep = 10
    integer            :: kk, ii, i, k
    real               :: eps = 0.0, diff = 0.0, fit0 = 0.0
    kk = 0
@@ -1340,6 +1342,7 @@ program main
 " "
  call read_input()
  if (seed_flag) then
+  seed = 73709
   call init_random_seed(seed)
   seed_flag=.false.
  end if
