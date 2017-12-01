@@ -15,4 +15,8 @@ importante:
 
 2. citas:
    Se ha añadido una seccion en el output que añade las publicaciones de cada modelo.
-   Tambien se añade la cita dle presente codigo para que pueda ser citado.
+   Tambien se añade la cita del codigo para que pueda ser citado.
+
+3. El parametro Biodiversity, proporcional al número de parejas de cromosomas idénticos se hace entero, ademas de mostrar el numero de parejas posibles.
+
+4. El Fitness se universaliza para todos los modelos mediante normalización al rango de presiones de la isoterma

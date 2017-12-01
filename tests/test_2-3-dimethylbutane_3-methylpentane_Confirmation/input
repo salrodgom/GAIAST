@@ -1,8 +1,0 @@
-#physically_constrained
-ncomp 2
-1.0 langmuir_freundlich_dualsite
-1.0 langmuir_freundlich_dualsite
-inter  4096
-ffit? .false.
-2.09375000       1.99999952      0.499999970       2.29249001       8704.09473       7.43749952 # Fitness:   3.19428481E-02 Rseed  1087338797
-3.11724448       28.0013046       2.99999976      0.871085525       496.954010       1.21874917    

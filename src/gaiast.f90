@@ -896,12 +896,8 @@ module mod_genetic
    integer :: i,compound,seed,j,k
    new_citizen%genotype = ' '
    do i = 1,32*np(compound)
-    !j=randint(48,49,seed)
-    !write(6,*)j,achar(j)
     new_citizen%genotype(i:i) = achar(randint(48,49,seed))
    end do
-   !stop
-   !write(6,'(a)') new_citizen%genotype
    do i = 1,np(compound)
     read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
    end do
@@ -1039,19 +1035,21 @@ module mod_genetic
    do i = 1, npress(compound)
     xx = datas(1,compound,i)
     yy = datas(2,compound,i)
-    fitness = fitness + 0.5*( yy - model(a,np(compound),xx,funk) )**2
+    fitness = fitness + 0.5*( yy - model(a,np(compound),xx,funk) )**2/&
+     log(datas(1,Compound,npress(Compound))-datas(1,Compound,1)+1)
    end do
    if(isnan(fitness)) fitness      = 99999999.999999
    if(fitness==0.0000000000)fitness= 99999999.999999
    return
   end function Fitness
 
-  subroutine WriteCitizen(k,kk,kkk,compound)
+  subroutine WriteCitizen(k,kk,kkk,compound,lod,vgh)
    implicit none
-   integer                        :: k,kk,i,compound
+   integer,intent(in)             :: k,kk,compound,lod,vgh,kkk
+   integer                        :: i
    character(len=100)             :: fmt_
    character(len=32*np(compound)) :: wnowaste
-   real                           :: wnowasteparam(1:32*np(compound)),wfitness,kkk
+   real                           :: wnowasteparam(1:32*np(compound)),wfitness
    do i=1,32*np(compound)
     wnowaste(i:i)=' '
    end do
@@ -1061,10 +1059,14 @@ module mod_genetic
     wnowasteparam(i) = parents(k)%phenotype(i)
    end do
    wfitness = parents(k)%fitness
-   write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f20.10,1x,a,1x,f20.10,1x,a)')compound,kk,wnowaste(1:32),&
-        wnowasteparam(1),wfitness,'[Fitness]',kkk,'[Similarity]' !,k
+   write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f14.7,1x,a,1x,a,i8,a,i8,a,1x,a)')compound,kk,wnowaste(1:32),&
+        wnowasteparam(1),wfitness,'[Fitness]','(',kkk,'/',vgh,')','[Similarity]' !,k
    do i=2,np(compound)
-    write(6,'(9x,a32,1x,e25.12)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i)
+    if(lod>0.and.i==3)then
+     write(6,'(9x,a32,1x,e25.12,10x,a,1x,i2,a)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i),'Finishing:',lod,'/10'
+    else
+     write(6,'(9x,a32,1x,e25.12)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i)
+    end if
    end do
   end subroutine WriteCitizen
 
@@ -1106,42 +1108,44 @@ module mod_genetic
    return
   end subroutine SortByFitness
 
-  real function Biodiversity( compound )
+  integer function Biodiversity( compound, animalito, suma  )
    implicit none
    integer,intent(in)             :: Compound
-   character(len=32*np(compound)) :: str1,str2
-   integer                        :: k
-   character(len=20)              :: mode = 'Superficial'
-   logical                        :: flag = .true.
+   type(typ_ga), intent(in)       :: animalito(1:ga_size)
+   integer,intent(out)            :: suma
+   integer                        :: i,j,k,cont
+   character(len=20)              :: mode = 'Normal'
+   logical                        :: flag = .false.
    real                           :: error_d = 1e-3
    select case (mode)
-    case('Superficial')
-     do k = 1, ga_size
-      do j = k+1,ga_size
-      !if(children(k)%genotype == children(j)%genotype) then
-      ! Biodiversity = Biodiversity + 1.0 /real(ga_size * ga_size)
-      !end if
-       dbio: do i = 1,np(compound)
-        bio: if( abs(children(k)%phenotype(i) - children(j)%phenotype(i)) <= error_d )then
-         flag = .true.
-         exit dbio
-        end if bio
-       end do dbio
-       if( flag ) then
-        Biodiversity = Biodiversity + 1.0 /real(ga_size * ga_size)
+    case('None')
+     Biodiversity = 0
+    case('Normal')
+     suma=0
+     Biodiversity = 0
+     do k =1,ga_size
+      do j=k+1,ga_size 
+       suma = suma + 1
+       if( animalito(k)%genotype(1:32*np(Compound)) == animalito(j)%genotype(1:32*np(Compound)) )then
+        Biodiversity = Biodiversity + 1
        end if
       end do
      end do
-     Biodiversity = 1.0/(Biodiversity)
-    case('Deep')
+    case('Superficial')
+     Biodiversity = 0.0
+     suma=0
      do k = 1, ga_size
       do j = k+1,ga_size
-        Biodiversity = Biodiversity + &
-         sum([(abs(iachar( children(k)%genotype(i:i)) - &
-          iachar( children(j)%genotype(i:i))/real(32*np(compound))),i=1,32*np(compound))])
+       cont=0
+       suma=suma+1
+       dbio: do i = 1,np(compound)
+        bio: if( abs(animalito(k)%phenotype(i) - animalito(j)%phenotype(i)) <= error_d )then
+         cont=cont+1
+        end if bio
+       end do dbio
+       if( cont == np(compound) ) Biodiversity = Biodiversity + 1
       end do
      end do
-     Biodiversity = 1.0/(Biodiversity*ga_size*ga_size)
    end select
    return
   end function Biodiversity
@@ -1271,14 +1275,15 @@ module mod_genetic
    implicit none
    integer,intent(in) :: Compound, Seed
    integer,parameter  :: maxstep = 100, minstep = 10
-   integer            :: kk, ii, i, k
-   real               :: eps = 0.0, diff = 0.0, fit0 = 0.0
+   integer            :: kk, ii, i, k,vgh
+   real               :: diff = 0.0, fit0 = 0.0
+   integer            :: eps 
    kk = 0
    ii = 0
    pop_alpha = [(new_citizen(compound,seed), i = 1,ga_size)]
    parents =>  pop_alpha
    children => pop_beta
-   if(refit_flag)then
+   if ( refit_flag ) then
     do i = 1, 2
      parents(i)%genotype=string_IEEE(compound)
      children(i)%genotype=string_IEEE(compound)
@@ -1289,21 +1294,19 @@ module mod_genetic
     call Swap()
     call SortByFitness()
    end if
-   call WriteCitizen(1,ii,eps,compound)
-   converge: do while (.true.)
+   call WriteCitizen(1,ii,eps,compound,0, vgh )
+   converge: do while ( .true. )
     ii=ii+1
     call SortByFitness()
-    !do i=1,ga_size
-     call WriteCitizen(1,ii,eps,compound)
-    !end do
-    !STOP
+    call WriteCitizen(1,ii,eps,compound,kk, vgh )
     diff = eps
-    eps = Biodiversity( compound )
+    eps = Biodiversity( compound, children, vgh )
     fire: if ( FlagFire ) then
      if ( ii >= minstep .and. parents(1)%fitness <= TolFire ) exit converge
     else
-     if( abs(diff - eps) <= 0.1 .and. ii >= minstep .and. &
-      parents(1)%fitness - fit0 == 0 ) then
+     if( ii>=minstep .and. parents(1)%fitness <= 0.1 .and. abs(parents(1)%fitness-fit0) <= 1e-4)then
+     !if( abs(diff - eps) <= 1e-2 .and. ii >= minstep .and. &
+     ! parents(1)%fitness - fit0 == 0 ) then
       kk = kk + 1
      else
       kk = 0
@@ -1312,7 +1315,6 @@ module mod_genetic
     end if fire
     call Mate(compound)
     call Swap()
-    !call SortByFitness()
     fit0 = parents(1)%fitness
    end do converge
    do i = 0, np( compound )-1

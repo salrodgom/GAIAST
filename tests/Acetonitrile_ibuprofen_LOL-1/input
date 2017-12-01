@@ -1,0 +1,7 @@
+ncomp 2
+3.0 langmuir
+1.0 langmuir
+inter 4096
+ffit? .true.
+3.90018606       9.96434212    
+20.7343731       3.00856918E-05
