@@ -1,19 +1,16 @@
 Genetic Algorithm IAST
 ======================
 This is the IAST code.
-Updated: Tue 29 Sep, 2015, 14:48:35
-Updated: Mon 09 Nov, 2015, 14:50:01
-Updated: Sun 13 Dic, 2015, 19:59:38
-Updated: Tue 11 Oct, 2016, 21:25:39
-First version:   Rafael Aguilar, Rocio Bueno-Perez
-Updated version: Salvador R.G. Balestra ORCID ID: orcid.org/0000-0002-2163-2782
-URL: http://salrodgom.github.io/
+
+We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the bundle, based only on the knowledge of the pure adsorption isotherms of the individual components.
+
+#Updated: Tue 29 Sep, 2015, 14:48:35
+#Updated: Mon 09 Nov, 2015, 14:50:01
+#Updated: Sun 13 Dic, 2015, 19:59:38
+#Updated: Tue 11 Oct, 2016, 21:25:39
+#First version:   Rafael Aguilar, Rocio Bueno-Perez
+#Updated version: Salvador R.G. Balestra ORCID ID: orcid.org/0000-0002-2163-2782, URL: http://salrodgom.github.io/
 
 Input files:
 ============
 "input", "isoterma1.dat", "isoterma2.dat", "isoterma3.dat", etc.
-
-Web:
-====
-
-http://salrodgom.github.io/gaiast/
