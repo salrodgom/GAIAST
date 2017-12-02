@@ -4,24 +4,25 @@
 - gaIAST is Fortran 2008+ standard compliant;
 - gaIAST is a Free, Open Source Project.
 
-# What is gaIAST?
+### What is gaIAST?
 
-- We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the bundle, based only on the knowledge of the pure adsorption isotherms of the individual components.
+- We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the bundle,
+based only on the knowledge of the pure adsorption isotherms of the individual components.
 
-# Updates:
+### Updates:
 
 - First version: January, 2015
 - Updated: Tue 29 Sep, 2015, 14:48:35
 - Updated: Mon 09 Nov, 2015, 14:50:01
 - Updated: Sun 13 Dic, 2015, 19:59:38
 - Updated: Tue 11 Oct, 2016, 21:25:39
-- Updated: Fri 01 Dec, 2017, 17:00:30
+- Updated: Fri 01 Dec, 2017, 17:00:30 ( An inconsistency among the code and the gcc and fortran compilers from version 4:6.3.0-4 has been corrected. )
 
-# Authors
+### Authors
 - Salvador R.G. Balestra, [ORCID](https://orcid.org/0000-0002-2163-2782), [github](http://salrodgom.github.io/) 
 - Rocio Bueno-Perez
 - Rafael Aguilar
 - Sofía Calero
 
-# Input files:
+### Input files:
 "input", "isoterma1.dat", "isoterma2.dat", "isoterma3.dat", etc.
