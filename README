@@ -1,23 +1,54 @@
-# Genetic Algorithm IAST
+<a name="top"></a>
+## Genetic Algorithm IAST [![GitHub tag](https://img.shields.io/github/tag/salrodgom/gaiast.svg)]() 
 
-This is the IAST code.
+[![License](https://img.shields.io/badge/license-GNU%20GeneraL%20Public%20License%20v3,%20GPLv3-blue.svg)]()
+[![License](https://img.shields.io/badge/license-BSD2-red.svg)]()
+[![License](https://img.shields.io/badge/license-BSD3-red.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-red.svg)]()
 
-We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the bundle, based only on the knowledge of the pure adsorption isotherms of the individual components.
+[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
 
-## Updates:
+- This is the gaIAST code. 
+- gaIAST is Fortran 2008+ standard compliant;
+- gaIAST is a Free, Open Source Project.
+
+#### Compiler Support
+
+[![Compiler](https://img.shields.io/badge/GNU-pass%20(v4.9.2+)-brightgreen.svg)]()
+[![Compiler](https://img.shields.io/badge/Intel-pass%20(v12.x+)-brightgreen.svg)]()
+[![Compiler](https://img.shields.io/badge/IBM%20XL-not%20tested-yellow.svg)]()
+[![Compiler](https://img.shields.io/badge/g95-not%20tested-yellow.svg)]()
+
+#### Copyrights
+
+GAIAST is an open source project, it is distributed under a multi-licensing system:
+
++ for open/free/libre projects:
+  - [GPL v3](http://www.gnu.org/licenses/gpl-3.0.html);
++ for closed source/commercial projects:
+  - [BSD 2-Clause](http://opensource.org/licenses/BSD-2-Clause);
+  - [BSD 3-Clause](http://opensource.org/licenses/BSD-3-Clause);
+  - [MIT](http://opensource.org/licenses/MIT).
+
+### What is gaIAST?
+
+- We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the bundle,
+based only on the knowledge of the pure adsorption isotherms of the individual components.
+
+### Updates:
 
 - First version: January, 2015
 - Updated: Tue 29 Sep, 2015, 14:48:35
 - Updated: Mon 09 Nov, 2015, 14:50:01
 - Updated: Sun 13 Dic, 2015, 19:59:38
 - Updated: Tue 11 Oct, 2016, 21:25:39
-- Updated: Fri 01 Dec, 2017, 17:00:30
+- Updated: Fri 01 Dec, 2017, 17:00:30 ( An inconsistency between the code and the gcc and fortran compilers from version 4:6.3.0-4 has been corrected. )
 
-## Authors
-- Salvador R.G. Balestra ORCID ID: orcid.org/0000-0002-2163-2782, URL: http://salrodgom.github.io/
+### Authors
+- Salvador R.G. Balestra, [ORCID](https://orcid.org/0000-0002-2163-2782), [github](http://salrodgom.github.io/) 
 - Rocio Bueno-Perez
 - Rafael Aguilar
 - Sofía Calero
 
-## Input files:
+### Input files:
 "input", "isoterma1.dat", "isoterma2.dat", "isoterma3.dat", etc.
