@@ -22,14 +22,11 @@ module mt19937_64
 !   email: {first}.{last}@econ.ku.dk
 ! From:
 !   References:
-!   T. Nishimura, ``Tables of 64-bit Mersenne Twisters''
-!     ACM Transactions on Modeling and 
-!     Computer Simulation 10. (2000) 348--357.
+!   T. Nishimura, "Tables of 64-bit Mersenne Twisters" 
+!     ACM Transactions on Modeling and Computer Simulation 10. (2000) 348--357.
 !   M. Matsumoto and T. Nishimura,
-!     ``Mersenne Twister: a 623-dimensionally equidistributed
-!       uniform pseudorandom number generator''
-!     ACM Transactions on Modeling and 
-!     Computer Simulation 8. (Jan. 1998) 3--30.
+!     "Mersenne Twister: a 623-dimensionally equidistributed uniform pseudorandom number generator"
+!     ACM Transactions on Modeling and Computer Simulation 8. (Jan. 1998) 3--30.
 !
 !   Any feedback is very welcome.
 !   http://www.math.hiroshima-u.ac.jp/~m-mat/MT/emt.html
@@ -343,7 +340,7 @@ module gaiast_globals
  real,pointer               :: x(:),y(:),alldat(:,:)
  character(100),allocatable      :: ajuste(:)
  character(32*maxnp),allocatable :: string_IEEE(:)
- character(100)             :: line,string,intmethod
+ character(100)             :: line,string,intmethod,Equation
  character(5)               :: inpt
  logical                    :: flag = .true., FlagFire = .false.,seed_flag=.true.
  logical                    :: physical_constrains = .false., range_flag =.true.
@@ -367,8 +364,13 @@ module gaiast_globals
     do ii=1,ncomponents
      read(5,*)concy(ii),ajuste(ii)
      string = ajuste(ii)
-     call MakeInitPOP(string,npar)
-     np(ii) = npar
+     if(string=="UserDefined")then
+      read(5,*) Equation
+      read(5,*) np(ii)
+     else
+      call MakeInitPOP(string,npar)
+      np(ii) = npar
+     end if
     end do
     concy=concy/sum(concy)
     allocate(param(ncomponents,0:maxval(np)-1))
@@ -945,6 +947,8 @@ module gaiast_globals
    n=2 ! numero de parametros del modelo.
   case ("langmuir")
    n=2
+  case ("redlich_peterson")
+   n=3
   case ("langmuir_freundlich")
    n=3
   case ("toth")
@@ -956,6 +960,8 @@ module gaiast_globals
   case ("langmuir_dualsite")
    n=4
   case ("langmuir_freundlich_dualsite")
+   n=6
+  case ("redlich_peterson_dualsite")
    n=6
   case ("langmuir_freundlich_3order")
    n=9
@@ -973,12 +979,13 @@ module gaiast_globals
  return
  end subroutine MakeInitPOP
 
- real function model(a,n,xx,funk)
+ real function model(a,n,xx,funk,equation)
   implicit none
-  integer,intent(in)        :: n
-  real,intent(in)           :: a(0:n-1)
-  real,intent(in)           :: xx
-  character(100),intent(in) :: funk
+  integer,intent(in)                 :: n
+  real,intent(in)                    :: a(0:n-1)
+  real,intent(in)                    :: xx
+  character(100),intent(in)          :: funk
+  character(100),intent(in),optional :: equation
   select case (funk)
    case("freundlich","f")
     model = a(0)*xx**a(1)
@@ -986,6 +993,10 @@ module gaiast_globals
     model = a(0)*a(1)*xx/(1+a(1)*xx)
    case("langmuir_freundlich","lf")
     model = a(0)*a(1)*xx**a(2)/(1.0+a(1)*xx**a(2))
+   case("redlich_peterson")
+    model= a(0)*a(1)*xx/(1.0+a(1)*xx**a(2))
+   case("redlich_peterson_dualsite")
+    model = a(0)*a(1)*xx/(1+a(1)*xx**a(2))+a(3)*a(4)*xx/(1.0+a(4)*xx**a(5))
    case("toth","t") ! f(x)=Nmax*alfa*x/(1+(alfa*x)**c)**(1/c)
     model = a(0)*a(1)*xx/((1+(a(1)*xx)**(a(2)))**(1.0/a(2)))
    case("langmuir_dualsite","l2")
@@ -1006,9 +1017,12 @@ module gaiast_globals
    case ("jovanovic_freundlich","jf")
     model = a(0)*(1.0 - exp(-(a(1)*xx)**a(2)))*exp(a(3)*xx**a(2))
    case ("langmuir_sips","ls")
-    model = (a(0)*a(1)*xx)/(1+a(1)*xx) + (a(2)*a(3)*xx**a(4))/(1+a(3)*xx*a(4))
+    model = (a(0)*a(1)*xx)/(1+a(1)*xx) + (a(2)*a(3)*xx**a(4))/(1+a(3)*xx**a(4))
    case ("jensen_seaton","jsn")
     model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3)) 
+   case ("UserDefined")
+    model = 0.0
+    STOP "Not available yet!"
   end select
   return
  end function model
@@ -1135,6 +1149,13 @@ module mod_genetic
        if(a(0)<0.0.or.a(2)<0.or.a(2)>1.0)then
         ! constrains:
         ! a>0 ; 0 < c < 1
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ("redlich_peterson_dualsite")
+       if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
+          a(3)<0.0.or.a(4)<0.0.or.a(5)<0)then
         penalty = infinite
        else
         penalty = 0.0

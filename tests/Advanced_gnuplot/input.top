@@ -1,6 +1,7 @@
-physically_constrained
+#physically_constrained
 ncomp 2
 1.0 langmuir_freundlich_dualsite
 1.0 langmuir_freundlich_dualsite
 inter  4096
 ffit? .true.
+refit .true.
