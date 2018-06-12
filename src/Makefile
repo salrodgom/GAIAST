@@ -1,4 +1,4 @@
-LINKFLAGS_FOR = -pedantic -Ofast -march=native
+LINKFLAGS_FOR = -ffree-form -pedantic -Ofast -march=native -fbounds-check
 COMP_FOR = gfortran
 GNUPLOT_SCRIPT = png.gp
 install:

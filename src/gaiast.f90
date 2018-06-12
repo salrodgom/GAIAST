@@ -335,6 +335,7 @@ module gaiast_globals
  real                       :: tol = 0.001, tolfire = 0.25
  real,allocatable           :: param(:,:),concy(:),pi(:,:),iso(:,:)
  integer,allocatable        :: npress(:)
+ integer                    :: compound
  integer,parameter          :: maxnp = 10, maxcompounds = 10, maxdata = 1000
  real,target                :: datas(2,maxcompounds,maxdata),f(maxdata)
  real,pointer               :: x(:),y(:),alldat(:,:)
@@ -437,7 +438,7 @@ module gaiast_globals
   real               :: xxx(ncomponents),yyy(ncomponents),dx,x0,y0
   real               :: s1(ncomponents)
   real,allocatable   :: apar(:)
-  integer            :: ib,jb,compound
+  integer            :: ib,jb
   character(len=100) :: funk
   s1 = 0.0
   if (range_flag) then
@@ -1033,8 +1034,8 @@ module mod_genetic
  use gaiast_globals
  use qsort_c_module
  implicit none
- private
- public fit
+ !private
+ !public :: fit,init,fitness
  integer,parameter             :: ga_size     = 2**13 ! numero de cromosomas
  real,parameter                :: ga_mutationrate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
  real,parameter                :: ga_eliterate= 0.25, GA_DisasterRate = 0.0000001
@@ -1437,7 +1438,47 @@ module mod_genetic
     end do slct2
    return
   end subroutine choose_propto_fitness
-
+!
+  subroutine init(compound,seed)
+   implicit none
+   integer,intent(in) :: Compound, Seed
+   integer,parameter  :: maxstep = 15, minstep = 1
+   integer            :: kk, ii, i, k,vgh
+   real               :: diff = 0.0, fit0 = 0.0
+   integer            :: eps
+   kk = 0
+   ii = 0
+   pop_alpha = [(new_citizen(compound,seed), i = 1,ga_size)]
+   parents =>  pop_alpha
+   children => pop_beta
+   if ( refit_flag ) then
+    do i = 1, 2
+     parents(i)%genotype=string_IEEE(compound)
+     children(i)%genotype=string_IEEE(compound)
+     call UpdateCitizen(parents(i),compound)
+     call UpdateCitizen(children(i),compound)
+    end do
+    call Mate(compound)
+    call Swap()
+    call SortByFitness()
+   end if
+   converge: do while ( .true. )
+    ii=ii+1
+    if ( ii >= maxstep ) exit converge
+    call SortByFitness()
+    call WriteCitizen(1,ii,eps,compound,kk, vgh )
+    diff = eps
+    eps = Biodiversity( compound, children, vgh )
+    call Mate(compound)
+    call Swap()
+    fit0 = parents(1)%fitness
+   end do converge
+   do i = 0, np( compound )-1
+    param( compound,i ) = children(1)%phenotype(i+1)
+   end do
+   return
+  end subroutine init
+!
   subroutine Fit(Compound,Seed)
    implicit none
    integer,intent(in) :: Compound, Seed
@@ -1492,12 +1533,339 @@ module mod_genetic
    return
   end subroutine fit
 end module mod_genetic
+!
+module mod_simplex
+ use mod_random
+ use gaiast_globals
+ use qsort_c_module
+ use mod_genetic
+ implicit none
+ private
+ public  :: fit_simplex
+CONTAINS
+! ======================================================================
+! Interface between program and module:
+subroutine fit_simplex(Seed)
+ implicit none
+ integer,intent(in) :: seed
+ real               :: e = 1.0e-4, scale = 1.0
+ integer            :: iprint = 0
+ integer            :: i,j
+ real               :: sp(0:np(compound)-1)
+ type(typ_ga)       :: axolotl
+ write(6,*)'# Compound:',compound, np(compound)
+ do i = 0,np(compound)-1
+  axolotl%phenotype(i+1) = param(compound,i)
+  sp(i) = axolotl%phenotype(i+1)
+ end do
+ call simplex(sp,compound,np(compound),e,scale,iprint)
+ do i= 0, np(compound)-1
+  axolotl%phenotype(i+1)=sp(i)
+  param(compound,i)=sp(i)
+ end do
+ write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
+ write(111,*)'#','Fitness:',func(np(compound),sp,compound),'Rseed:',seed
+end subroutine fit_simplex
 
+! ======================================================================
+! This is the function to be minimized
+real function func(n,x,compound) result(rosen) 
+  implicit none
+  integer,intent(in)   :: n
+  real,   intent (in)  :: x(0:n-1)
+  integer,intent(in)   :: compound
+  real                 :: sp(1:np(compound))
+  integer              :: i
+  sp = 0.0
+  do i=0,np(compound)-1
+   sp(i+1) = x(i) 
+  end do
+  rosen = fitness(sp,compound)
+  return 
+end function func
+! ======================================================================
+! This is the simplex routine
+! Michael F. Hutt
+! This program will attempt to minimize Rosenbrock's function using the 
+! Nelder-Mead simplex method. The program was originally developed in C. 
+! To be consistent with the way arrays are handled in C, all arrays will
+! start from 0.
+! compiles with ELF90
+! ======================================================================
+! Start of main program
+subroutine simplex(start, compound, n, EPSILON, scale, iprint)
+  implicit none
+  integer, intent (in)                   :: n, iprint, compound
+  real, intent (inout), dimension(0:n-1) :: start
+  real, intent (in)                      :: EPSILON, scale
+! Define Constants
+  integer, parameter :: MAX_IT = 10000
+  real, parameter :: ALPHA=1.0
+  real, parameter :: BETA=0.5
+  real, parameter :: GAMMA=2.0
+! ======================================================================
+! Variable Definitions
+! Integer vs = vertex with the smallest value
+! Integer vh = vertex with next smallest value 
+! Integer vg = vertex with largest value 
+! Integer i,j,m,row
+! Integer k = track the number of function evaluations 
+! Integer itr = track the number of iterations
+! real v = holds vertices of simplex 
+! real pn,qn = values used to create initial simplex 
+! real f = value of function at each vertex 
+! real fr = value of function at reflection point 
+! real fe = value of function at expansion point 
+! real fc = value of function at contraction point 
+! real vr = reflection - coordinates 
+! real ve = expansion - coordinates 
+! real vc = contraction - coordinates 
+! real vm = centroid - coordinates 
+! real min
+! real fsum,favg,s,cent
+! real vtmp = temporary array passed to FUNC
+! ======================================================================
+  Integer :: vs,vh,vg
+  Integer :: i,j,k,itr,m,row
+  real, dimension(:,:), allocatable :: v
+  real, dimension(:), allocatable  :: f
+  real, dimension(:), allocatable :: vr
+  real, dimension(:), allocatable :: ve
+  real, dimension(:), allocatable :: vc
+  real, dimension(:), allocatable :: vm
+  real, dimension(:), allocatable :: vtmp
+  real :: pn,qn
+  real :: fr,fe,fc
+  real :: min,fsum,favg,cent,s
+
+  allocate (v(0:n,0:n-1))
+  allocate (f(0:n))
+  allocate (vr(0:n-1))
+  allocate (ve(0:n-1))
+  allocate (vc(0:n-1))
+  allocate (vm(0:n-1))
+  allocate (vtmp(0:n-1))
+
+! create the initial simplex
+! assume one of the vertices is 0.0
+
+  pn = scale*(sqrt(n+1.)-1.+n)/(n*sqrt(2.))
+  qn = scale*(sqrt(n+1.)-1.)/(n*sqrt(2.))
+
+  DO i=0,n-1
+    v(0,i) = start(i)
+  END DO
+
+  DO i=1,n
+    DO j=0,n-1
+      IF (i-1 == j) THEN
+        v(i,j) = pn + start(j)
+      ELSE
+        v(i,j) = qn + start(j)
+      END IF
+    END DO
+  END DO
+
+
+! find the initial function values
+
+  DO j=0,n
+! put coordinates into single dimension array
+! to pass it to FUNC
+    DO m=0,n-1
+      vtmp(m) = v(j,m)
+    END DO
+    f(j)=FUNC(n,vtmp,compound)
+  END DO
+
+! Print out the initial simplex
+! Print out the initial function values
+
+  IF (iprint == 0) THEN
+    Write(6,*) "Initial Values"
+    do i=0,n
+     write(6,*)(v(i,j),j=0,n-1),'Fit:',f(i)
+    end do
+  END IF
+
+  k = n+1
+
+! begin main loop of the minimization
+
+DO itr=1,MAX_IT
+! find the index of the largest value
+  vg = 0
+  DO j=0,n
+    IF (f(j) .GT. f(vg)) THEN
+      vg = j
+    END IF
+  END DO
+
+! find the index of the smallest value
+  vs = 0
+  DO j=0,n
+    If (f(j) .LT. f(vs)) Then
+      vs = j
+    END IF
+  END DO
+
+! find the index of the second largest value
+  vh = vs
+  Do j=0,n
+    If ((f(j) .GT. f(vh)) .AND. (f(j) .LT. f(vg))) Then
+      vh = j
+    END IF
+  END DO
+
+! calculate the centroid
+  DO j=0,n-1
+  cent = 0.0
+    DO m=0,n
+      If (m .NE. vg) Then
+        cent = cent + v(m,j)
+      END IF
+    END DO
+    vm(j) = cent/n
+  END DO
+
+! reflect vg to new vertex vr
+  DO j=0,n-1
+    vr(j) = (1+ALPHA)*vm(j) - ALPHA*v(vg,j)
+  END DO
+  fr = FUNC(n,vr,compound)
+  k = k+1
+
+  If ((fr .LE. f(vh)) .AND. (fr .GT. f(vs))) Then
+    DO j=0,n-1
+      v(vg,j) = vr(j)
+    END DO
+    f(vg) = fr
+  END IF
+
+! investigate a step further in this direction
+  If (fr .LE. f(vs)) Then
+    DO j=0,n-1
+      ve(j) = GAMMA*vr(j) + (1-GAMMA)*vm(j)
+    END DO
+    fe = FUNC(n,ve,compound)
+    k = k+1
+
+! by making fe < fr as opposed to fe < f(vs), Rosenbrocks function
+! takes 62 iterations as opposed to 64. 
+
+    If (fe .LT. fr) Then
+      DO j=0,n-1
+        v(vg,j) = ve(j)
+      END DO
+      f(vg) = fe
+    Else
+      DO j=0,n-1
+        v(vg,j) = vr(j)
+      END DO
+      f(vg) = fr
+    END IF
+  END IF
+
+! check to see if a contraction is necessary
+  If (fr .GT. f(vh)) Then
+    DO j=0,n-1
+      vc(j) = BETA*v(vg,j) + (1-BETA)*vm(j)
+    END DO
+    fc = FUNC(n,vc,compound)
+    k = k+1
+    If (fc .LT. f(vg)) Then
+      DO j=0,n-1
+        v(vg,j) = vc(j)
+      END DO
+    f(vg) = fc
+
+! at this point the contraction is not successful,
+! we must halve the distance from vs to all the
+! vertices of the simplex and then continue.
+! 10/31/97 - modified C program to account for 
+! all vertices.
+
+  Else
+    DO row=0,n
+      If (row .NE. vs) Then
+        DO j=0,n-1
+          v(row,j) = v(vs,j)+(v(row,j)-v(vs,j))/2.0
+        END DO
+      END IF
+    END DO
+    DO m=0,n-1
+      vtmp(m) = v(vg,m)
+    END DO
+    f(vg) = FUNC(n,vtmp,compound)
+    k = k+1
+
+    DO m=0,n-1
+      vtmp(m) = v(vh,m)
+    END DO
+    f(vh) = FUNC(n,vtmp,compound)
+    k = k+1
+    END IF
+  END IF
+! find the index of the smallest value for printing
+  vs=0
+  DO j=0,n
+    If (f(j) .LT. f(vs)) Then
+      vs = j
+    END IF
+  END DO
+! print out the value at each iteration 
+  IF (iprint == 0) THEN
+    Write(6,*) "Iteration:",itr,(v(vs,j),j=0,n-1),'Value:',f(vs)
+  END IF
+! test for convergence
+  fsum = 0.0
+  DO j=0,n
+    fsum = fsum + f(j)
+  END DO
+  favg = fsum/(n+1.)
+  !s = 0.0
+  !DO j=0,n
+  !  s = s + ((f(j)-favg)**2.)/n
+  !END DO
+  !s = sqrt(s)
+  If (favg .LT. EPSILON) Then
+    write(6,'(a,1x,f14.7,1x,a,1x,f14.7)')'Nelder-Mead has converged:',favg,'<',epsilon
+    EXIT ! Nelder Mead has converged - exit main loop
+  END IF
+END DO
+! end main loop of the minimization
+! find the index of the smallest value
+  vs = 0
+  DO j=0,n
+    If (f(j) .LT. f(vs)) Then
+      vs = j
+    END IF
+  END DO
+!  print out the minimum
+  DO m=0,n-1
+    vtmp(m) = v(vs,m)
+  END DO
+  min = FUNC(n,vtmp,compound)
+  write(6,*)'The minimum was found at ',(v(vs,k),k=0,n-1)
+  write(6,*)'The value at the minimum is ',min
+  DO i=0,n-1
+    start(i)=v(vs,i)
+  END DO
+250  FORMAT(A29,F7.4)
+300  FORMAT(F11.6,F11.6,F11.6)
+  return
+  end subroutine simplex
+! ======================================================================
+end module mod_simplex
+!
 program main
  use mod_random
  !use mt19937_64
  use gaiast_globals
  use mod_genetic
+ use mod_simplex
+ implicit none
+ logical        :: simplex =.true.
  !use iso_fortran_env
  !print '(4a)', 'This file was compiled by ', &
  !      compiler_version(), ' using the options ', &
@@ -1520,10 +1888,15 @@ program main
  call ReadIsotherms()
  if(flag)then
   open(111,file="iso.dat")
-  do ii = 1, ncomponents
-   write(6,'("Fitting compound:",1x,i2)') ii
+  do compound = 1, ncomponents
+   write(6,'("Fitting compound:",1x,i2)') compound
    write(6,'(a14,1x,a24,1x,a24,10x,a14)')'Compound/Step:','Cromosome:','Parameters','Control'
-   call fit(ii,seed)
+   if(simplex)then
+    call init(compound,seed)
+    call fit_simplex(seed)
+   else
+    call fit(compound,seed)
+   end if
   end do
  end if
  call bounds()
