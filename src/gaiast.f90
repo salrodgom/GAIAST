@@ -1548,7 +1548,7 @@ CONTAINS
 subroutine fit_simplex(Seed)
  implicit none
  integer,intent(in) :: seed
- real               :: e = 1.0e-4, scale = 1.0
+ real               :: e = 1.0e-3, scale = 1.0
  integer            :: iprint = 0
  integer            :: i,j
  real               :: sp(0:np(compound)-1)
@@ -1565,6 +1565,7 @@ subroutine fit_simplex(Seed)
  end do
  write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
  write(111,*)'#','Fitness:',func(np(compound),sp,compound),'Rseed:',seed
+ write(6,'(a)')'# Minimising Rosenbrock`s function using the Nelder-Mead simplex method'
 end subroutine fit_simplex
 
 ! ======================================================================
@@ -1682,7 +1683,7 @@ subroutine simplex(start, compound, n, EPSILON, scale, iprint)
 ! Print out the initial function values
 
   IF (iprint == 0) THEN
-    Write(6,*) "Initial Values"
+    Write(6,*) "Initial Values from genetic algorithm:"
     do i=0,n
      write(6,*)(v(i,j),j=0,n-1),'Fit:',f(i)
     end do
@@ -1807,16 +1808,16 @@ DO itr=1,MAX_IT
     END IF
   END IF
 ! find the index of the smallest value for printing
-  vs=0
-  DO j=0,n
-    If (f(j) .LT. f(vs)) Then
-      vs = j
-    END IF
-  END DO
+  !vs=0
+  !DO j=0,n
+  !  If (f(j) .LT. f(vs)) Then
+  !    vs = j
+  !  END IF
+  !END DO
 ! print out the value at each iteration 
-  IF (iprint == 0) THEN
-    Write(6,*) "Iteration:",itr,(v(vs,j),j=0,n-1),'Value:',f(vs)
-  END IF
+  !IF (iprint == 0) THEN
+  !  Write(6,*) "Iteration:",itr,(v(vs,j),j=0,n-1),'Value:',f(vs)
+  !END IF
 ! test for convergence
   fsum = 0.0
   DO j=0,n
@@ -1828,8 +1829,9 @@ DO itr=1,MAX_IT
   !  s = s + ((f(j)-favg)**2.)/n
   !END DO
   !s = sqrt(s)
-  If (favg .LT. EPSILON) Then
+  If (favg .LT. EPSILON.or.itr==MAX_IT) Then
     write(6,'(a,1x,f14.7,1x,a,1x,f14.7)')'Nelder-Mead has converged:',favg,'<',epsilon
+    Write(6,*) "Final values, iteration:",itr,(v(vs,j),j=0,n-1),'Value:',f(vs)
     EXIT ! Nelder Mead has converged - exit main loop
   END IF
 END DO
@@ -1846,10 +1848,10 @@ END DO
     vtmp(m) = v(vs,m)
   END DO
   min = FUNC(n,vtmp,compound)
-  write(6,*)'The minimum was found at ',(v(vs,k),k=0,n-1)
-  write(6,*)'The value at the minimum is ',min
+  !write(6,*)'The minimum was found at ',(v(vs,k),k=0,n-1)
+  !write(6,*)'The value at the minimum is ',min
   DO i=0,n-1
-    start(i)=v(vs,i)
+   start(i)=v(vs,i)
   END DO
 250  FORMAT(A29,F7.4)
 300  FORMAT(F11.6,F11.6,F11.6)
