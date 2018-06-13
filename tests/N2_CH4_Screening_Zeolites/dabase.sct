@@ -4,10 +4,11 @@ file1=ch4.txt.all
 file2=n2.txt.all
 # funciones
 function make_input_iast {
-echo "ncomp 2
-1.0 langmuir_dualsite
-1.0 langmuir_dualsite
-inter  2048
+echo "physically_constrained
+ncomp 2
+1.0 langmuir_sips
+1.0 langmuir_sips
+inter  4096
 ffit? .true." > input
 }
 
@@ -29,5 +30,5 @@ while read line ; do
  mv input* *.png *.dat curves.txt $line
  rm $line/adsorcion.dat
 done < list
-rm gaiast
+make clean
 exit 0
