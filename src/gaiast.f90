@@ -1349,7 +1349,7 @@ module mod_genetic
    implicit none
    integer,intent(in)     :: compound
    integer(8),intent(in)  :: seed
-   integer,parameter  :: maxstep = 100, minstep = 10
+   integer,parameter  :: maxstep = 500, minstep = 10
    integer            :: kk, ii, i, k,vgh
    real               :: diff = 0.0, fit0 = 0.0
    integer            :: eps 
@@ -1745,7 +1745,7 @@ program main
  use mod_genetic
  use mod_simplex
  implicit none
- logical        :: simplex =.true.
+ logical        :: simplex =.false.
  !use iso_fortran_env
  !print '(4a)', 'This file was compiled by ', &
  !      compiler_version(), ' using the options ', &
