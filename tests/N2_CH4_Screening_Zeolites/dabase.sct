@@ -6,8 +6,8 @@ file2=n2.txt.all
 function make_input_iast {
 echo "physically_constrained
 ncomp 2
-1.0 langmuir_sips
-1.0 langmuir_sips
+1.0 langmuir_freundlich_dualsite
+1.0 langmuir_freundlich_dualsite
 inter  4096
 ffit? .true." > input
 }

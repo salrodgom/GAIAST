@@ -1304,7 +1304,7 @@ module mod_genetic
    implicit none
    integer,intent(in)     :: compound
    integer(8),intent(in) :: seed
-   integer,parameter  :: maxstep = 100, minstep = 10
+   integer,parameter  :: maxstep = 100, minstep = 25
    integer            :: kk = 0, ii = 0, i = 0, k = 0,vgh = 0
    real               :: diff = 0.0, fit0 = 999999.0
    integer            :: eps = 0.0
