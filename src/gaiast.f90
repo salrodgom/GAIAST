@@ -10,66 +10,76 @@ module mod_random
  private
  public init_random_seed, randint, r4_uniform
  contains
- subroutine init_random_seed(seed)
+ subroutine init_random_seed( )
+  use iso_fortran_env, only: int64
   implicit none
-  integer(8), intent(out) :: seed
-! local
-  integer   day,hour,i4_huge,milli,minute,month,second,year
-  parameter (i4_huge=2147483647)
-  double precision temp
-  character*(10) time
-  character*(8) date
-  call date_and_time (date,time)
-  read (date,'(i4,i2,i2)')year,month,day
-  read (time,'(i2,i2,i2,1x,i3)')hour,minute,second,milli
-  temp=0.0D+00
-  temp=temp+dble(month-1)/11.0D+00
-  temp=temp+dble(day-1)/30.0D+00
-  temp=temp+dble(hour)/23.0D+00
-  temp=temp+dble(minute)/59.0D+00
-  temp=temp+dble(second)/59.0D+00
-  temp=temp+dble(milli)/999.0D+00
-  temp=temp/6.0D+00
-  doext: do
-    if(temp<=0.0D+00 )then
-       temp=temp+1.0D+00
-       cycle doext
+  integer, allocatable :: seed(:)
+  integer              :: i, n, un, istat, dt(8), pid
+  integer(int64)       :: t
+  call random_seed(size = n)
+  allocate(seed(n))
+  write(6,'(a)')"Random seed:"
+  ! First try if the OS provides a random number generator
+  open(newunit=un, file="/dev/urandom", access="stream", &
+       form="unformatted", action="read", status="old", iostat=istat)
+  if (istat == 0) then
+   read(un) seed
+   close(un)
+   write(6,'(a)')"OS provides a random number generator"
+  else
+   ! Fallback to XOR:ing the current time and pid. The PID is
+   ! useful in case one launches multiple instances of the same
+   ! program in parallel.
+   call system_clock(t)
+   if (t == 0) then
+      call date_and_time(values=dt)
+      t = (dt(1) - 1970) * 365_int64 * 24 * 60 * 60 * 1000 &
+           + dt(2) * 31_int64 * 24 * 60 * 60 * 1000 &
+           + dt(3) * 24_int64 * 60 * 60 * 1000 &
+           + dt(5) * 60 * 60 * 1000 &
+           + dt(6) * 60 * 1000 + dt(7) * 1000 &
+           + dt(8)
+   end if
+   pid = getpid()
+   t = ieor(t, int(pid, kind(t)))
+   do i = 1, n
+      seed(i) = lcg(t)
+   end do
+   write(6,'(a)')"Fallback to the current time and pid."
+  end if
+  call random_seed(put=seed)
+  write(6,*) seed
+ contains
+  ! This simple PRNG might not be good enough for real work, but is
+  ! sufficient for seeding a better PRNG.
+  function lcg(s)
+    integer :: lcg
+    integer(int64) :: s
+    if (s == 0) then
+       s = 104729
     else
-       exit doext
+       s = mod(s, 4294967296_int64)
     end if
-  enddo doext
-  doext2: do
-    if (1.0D+00<temp) then
-       temp=temp-1.0D+00
-       cycle doext2
-    else
-       exit doext2
-    end if
-  end do doext2
-  seed=int(dble(i4_huge)*temp)
-  if(seed == 0)       seed = 1
-  if(seed == i4_huge) seed = seed-1
-  return
+    s = mod(s * 279470273_int64, 4294967291_int64)
+    lcg = int(mod(s, int(huge(0), int64)), kind(0))
+  end function lcg
  end subroutine init_random_seed
-!
- integer function randint(i,j,seed)
+ integer function randint(i,j)
   integer,intent(in)    :: i,j
-  integer(8),intent(in) :: seed
   real                  :: r
-  CALL RANDOM_NUMBER(r)
-  randint=int(r*(j+1-i))+i
+  call random_number(r)
+  randint = i + floor((j+1-i)*r)
  end function randint
 ! 
- real function r4_uniform(x,y,seed)
+ real function r4_uniform(x,y)
   implicit none
-  real,intent(in)       :: x,y 
-  integer(8),intent(in) :: seed
+  real,intent(in)       :: x,y
   real                  :: r
-  CALL RANDOM_NUMBER(r)
+  call random_number(r)
   r4_uniform=(r*(y-x))+x
   return
  end function r4_uniform
-end module
+end module mod_random
 
 module newton
     implicit none
@@ -912,13 +922,12 @@ module mod_genetic
  type(typ_ga), target          :: pop_beta( ga_size )
  contains
 
-  type(typ_ga) function new_citizen(compound,seed)
+  type(typ_ga) function new_citizen(compound)
    implicit none
    integer     :: i,compound,j,k
-   integer(8) :: seed
    new_citizen%genotype = ' '
    do i = 1,32*np(compound)
-    new_citizen%genotype(i:i) = achar(randint(48,49,seed))
+    new_citizen%genotype(i:i) = achar(randint(48,49))
    end do
    do i = 1,np(compound)
     read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
@@ -1184,8 +1193,8 @@ module mod_genetic
    type(typ_ga), intent(inout) :: macrophage
    integer                     :: ipos,compound
    do i = 1,np(compound)
-    ipos = randint(32*(i-1)+1,32*i,seed)
-    macrophage%genotype(ipos:ipos) = achar(randint(48,49,seed))
+    ipos = randint(32*(i-1)+1,32*i)
+    macrophage%genotype(ipos:ipos) = achar(randint(48,49))
    end do
    return
   end subroutine Mutate
@@ -1197,7 +1206,7 @@ module mod_genetic
    real               :: rrr
    do i = GA_ELITISTS + 1, GA_Size
     do j=1,32*np(compound)
-     Children%genotype(j:j) = achar(randint(48,49,seed))
+     Children%genotype(j:j) = achar(randint(48,49))
     end do
     call UpdateCitizen(Children(i),Compound)
    end do
@@ -1234,10 +1243,10 @@ module mod_genetic
     !call choose_propto_fitness(i1,i2)
     !write(6,*)i1,i2
     ! }}
-    spos = randint(0, 32*np(compound), seed )
+    spos = randint(0, 32*np(compound) )
     children(i)%genotype = parents(i1)%genotype(:spos) // parents(i2)%genotype(spos+1:)
     ! Mutate and NuclearDisaster:
-    rrr = r4_uniform(0.0,1.0,seed)
+    rrr = r4_uniform(0.0,1.0)
     if ( rrr < GA_MUTATIONRATE) then
      call Mutate(children(i),compound)
     else if ( rrr >= GA_MutationRate .and. rrr <= GA_MutationRate + GA_DisasterRate ) then
@@ -1253,10 +1262,10 @@ module mod_genetic
   subroutine choose_randomly(j1,j2)
    implicit none
    integer,intent(out) :: j1,j2
-   j1  = randint(1, int(ga_size/2),seed)
-   j2  = randint(1, int(ga_size/2),seed)
+   j1  = randint(1, int(ga_size/2))
+   j2  = randint(1, int(ga_size/2))
    do while ( j1 == j2 )
-    j2 = randint(1, int(ga_size/2),seed)
+    j2 = randint(1, int(ga_size/2))
    end do
    return
   end subroutine choose_randomly
@@ -1281,16 +1290,16 @@ module mod_genetic
    end do
    prop = prop / rrr1
    ! select 1:
-    rrr1 = r4_uniform(0.0,1.0,seed)
+    rrr1 = r4_uniform(0.0,1.0)
     slct1: do i=1,ga_size
      if(rrr1<=prop(i-1).and.rrr1>prop(i))then
       j1 = i
      end if
     end do slct1
     ! select 2:
-    rrr2 = r4_uniform(0.0,1.0,seed)
+    rrr2 = r4_uniform(0.0,1.0)
     do while ( rrr1 == rrr2 )
-     rrr2 = r4_uniform(0.0,1.0,seed)
+     rrr2 = r4_uniform(0.0,1.0)
     end do
     slct2: do i=1,ga_size
      if(rrr2<=prop(i-1).and.rrr2>prop(i))then
@@ -1300,15 +1309,14 @@ module mod_genetic
    return
   end subroutine choose_propto_fitness
 !
-  subroutine init(compound,seed)
+  subroutine init(compound)
    implicit none
    integer,intent(in)     :: compound
-   integer(8),intent(in) :: seed
    integer,parameter  :: maxstep = 100, minstep = 25
    integer            :: kk = 0, ii = 0, i = 0, k = 0,vgh = 0
    real               :: diff = 0.0, fit0 = 999999.0
    integer            :: eps = 0.0
-   pop_alpha = [(new_citizen(compound,seed), i = 1,ga_size)]
+   pop_alpha = [(new_citizen(compound), i = 1,ga_size)]
    parents =>  pop_alpha
    children => pop_beta
    if ( refit_flag ) then
@@ -1345,17 +1353,16 @@ module mod_genetic
    return
   end subroutine init
 !
-  subroutine Fit(compound,seed)
+  subroutine Fit(compound)
    implicit none
    integer,intent(in)     :: compound
-   integer(8),intent(in)  :: seed
    integer,parameter  :: maxstep = 500, minstep = 10
    integer            :: kk, ii, i, k,vgh
    real               :: diff = 0.0, fit0 = 0.0
    integer            :: eps 
    kk = 0
    ii = 0
-   pop_alpha = [(new_citizen(compound,seed), i = 1,ga_size)]
+   pop_alpha = [(new_citizen(compound), i = 1,ga_size)]
    parents =>  pop_alpha
    children => pop_beta
    if ( refit_flag ) then
@@ -1396,7 +1403,7 @@ module mod_genetic
     param( compound,i ) = children(1)%phenotype(i+1)
    end do
    write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
-   write(111,*)'#','Fitness:',fit0,'Similarity:',eps,'Rseed',seed
+   write(111,*)'#','Fitness:',fit0,'Similarity:',eps
    return
   end subroutine fit
 end module mod_genetic
@@ -1412,9 +1419,8 @@ module mod_simplex
  contains
 ! ======================================================================
 ! Interface between program and module:
-subroutine fit_simplex(seed)
+subroutine fit_simplex()
  implicit none
- integer(8),intent(in) :: seed
  real               :: e = 1.0e-3, scale = 1.0
  integer            :: iprint = 0
  integer            :: i,j
@@ -1433,7 +1439,7 @@ subroutine fit_simplex(seed)
   param(compound,i)=sp(i)
  end do
  write(111,*)'#',(param(compound,i),i=0,np(compound )-1)
- write(111,*)'#','Fitness:',func(np(compound),sp,compound),'Rseed:',seed
+ write(111,*)'#','Fitness:',func(np(compound),sp,compound)
 end subroutine fit_simplex
 
 ! ======================================================================
@@ -1760,11 +1766,8 @@ program main
 " "
  call read_input()
  if (seed_flag) then
-  call init_random_seed(seed)
-  write(6,'("Random seed called from generator:",1x,i10)') seed
+  call init_random_seed( )
   seed_flag=.false.
- else
-  write(6,'("Random seed from input file:",1x,i10)') seed
  end if
  call ReadIsotherms()
  if(flag)then
@@ -1774,10 +1777,10 @@ program main
    write(6,'("Fitting compound:",1x,i2)') compound
    write(6,'(a14,1x,a24,1x,a24,10x,a14)')'Compound/Step:','Cromosome:','Parameters','Control'
    if(simplex)then
-    call init(compound,seed)
-    call fit_simplex(seed)
+    call init(compound)
+    call fit_simplex()
    else
-    call fit(compound,seed)
+    call fit(compound)
    end if
   end do
  end if
