@@ -1149,7 +1149,7 @@ module mod_genetic
   integer function Biodiversity( compound, animalito, suma  )
    implicit none
    integer,intent(in)             :: Compound
-   type(typ_ga), intent(in)       :: animalito(1:ga_size)
+   type(typ_ga), intent(inout)    :: animalito(1:ga_size)
    integer,intent(out)            :: suma
    integer                        :: i,j,k,cont
    character(len=20)              :: mode = 'Normal'
@@ -1309,50 +1309,6 @@ module mod_genetic
    return
   end subroutine choose_propto_fitness
 !
-  subroutine init(compound)
-   implicit none
-   integer,intent(in)     :: compound
-   integer,parameter  :: maxstep = 100, minstep = 25
-   integer            :: kk = 0, ii = 0, i = 0, k = 0,vgh = 0
-   real               :: diff = 0.0, fit0 = 999999.0
-   integer            :: eps = 0.0
-   pop_alpha = [(new_citizen(compound), i = 1,ga_size)]
-   parents =>  pop_alpha
-   children => pop_beta
-   if ( refit_flag ) then
-    do i = 1, 2
-     parents(i)%genotype=string_IEEE(compound)
-     children(i)%genotype=string_IEEE(compound)
-     call UpdateCitizen(parents(i),compound)
-     call UpdateCitizen(children(i),compound)
-    end do
-    call Mate(compound)
-    call Swap()
-    call SortByFitness()
-   end if
-   ii = 0
-   fit0 = parents(1)%fitness
-   converge: do while ( .true. )
-    ii=ii+1
-    if ( ii == 1 ) write(6,'(a)') 'Go Down the Rabbit Hole >'
-    if ( ii >= maxstep .or. (fit0 < 1.0 .and.ii>=minstep) ) then
-     call WriteCitizen(1,ii,eps,compound,kk, vgh )
-     exit converge
-    end if
-    call SortByFitness()
-    call WriteCitizen(1,ii,eps,compound,kk, vgh )
-    diff = eps
-    eps = Biodiversity( compound, children, vgh )
-    call Mate(compound)
-    call Swap()
-    fit0 = parents(1)%fitness
-   end do converge
-   do i = 0, np( compound )-1
-    param( compound,i ) = children(1)%phenotype(i+1)
-   end do
-   return
-  end subroutine init
-!
   subroutine Fit(compound)
    implicit none
    integer,intent(in)     :: compound
@@ -1379,6 +1335,7 @@ module mod_genetic
    call WriteCitizen(1,ii,eps,compound,0, vgh )
    converge: do while ( .true. )
     ii=ii+1
+    if ( ii == 1 ) write(6,'(a)') 'Go Down the Rabbit Hole >'
     call SortByFitness()
     call WriteCitizen(1,ii,eps,compound,kk, vgh )
     diff = eps
@@ -1387,8 +1344,6 @@ module mod_genetic
      if ( ii >= minstep .and. parents(1)%fitness <= TolFire ) exit converge
     else
      if( ii>=minstep .and. parents(1)%fitness <= 0.1 .and. abs(parents(1)%fitness-fit0) <= 1e-4)then
-     !if( abs(diff - eps) <= 1e-2 .and. ii >= minstep .and. &
-     ! parents(1)%fitness - fit0 == 0 ) then
       kk = kk + 1
      else
       kk = 0
@@ -1421,7 +1376,7 @@ module mod_simplex
 ! Interface between program and module:
 subroutine fit_simplex()
  implicit none
- real               :: e = 1.0e-3, scale = 1.0
+ real               :: e = 1.0e-4, scale = 1.0
  integer            :: iprint = 0
  integer            :: i,j
  real               :: sp(0:np(compound)-1)
@@ -1474,7 +1429,7 @@ subroutine simplex(start, compound, n, EPSILON, scale, iprint)
   real, intent (inout), dimension(0:n-1) :: start
   real, intent (in)                      :: EPSILON, scale
 ! Define Constants
-  integer, parameter :: MAX_IT = 100000
+  integer, parameter :: MAX_IT = 1000000
   real, parameter :: ALPHA=1.0
   real, parameter :: BETA=0.5
   real, parameter :: GAMMA=2.0
@@ -1746,16 +1701,13 @@ end module mod_simplex
 !
 program main
  use mod_random
- !use mt19937_64
  use gaiast_globals
  use mod_genetic
  use mod_simplex
- implicit none
- logical        :: simplex =.false.
- !use iso_fortran_env
- !print '(4a)', 'This file was compiled by ', &
- !      compiler_version(), ' using the options ', &
- !      compiler_options()
+ use, intrinsic :: iso_fortran_env
+ print '(4a)', 'This file was compiled by ', &
+       compiler_version(), ' using the options ', &
+       compiler_options()
  print '(a)',' ',&
 "#     ________    _____   .___    _____     ____________________  ",&
 "#    /  _____/   /  _  \  |   |  /  _  \   /   _____/\__    ___/  ",&
@@ -1776,12 +1728,8 @@ program main
    write(6,'(a)')' '
    write(6,'("Fitting compound:",1x,i2)') compound
    write(6,'(a14,1x,a24,1x,a24,10x,a14)')'Compound/Step:','Cromosome:','Parameters','Control'
-   if(simplex)then
-    call init(compound)
-    call fit_simplex()
-   else
-    call fit(compound)
-   end if
+   call fit(compound)
+   call fit_simplex()
   end do
  end if
  call bounds()
