@@ -847,7 +847,7 @@ module gaiast_globals
   case ("langmuir_sips")
    n=5
   case ("isobare")
-   n=3
+   n=4
  end select
  return
  end subroutine MakeInitPOP
@@ -896,7 +896,7 @@ module gaiast_globals
    case ("UserDefined")
     model = 0.0
    case ("isobare")
-    model = - 1.0/ (a(0)*exp(a(1)-a(2)/xx) + 1.0)
+    model = 1.0/(a(0)*exp(a(1) - a(2)/xx) + a(3))
    case default
     STOP "Not available yet!"
   end select
