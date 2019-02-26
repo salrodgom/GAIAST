@@ -897,6 +897,7 @@ module gaiast_globals
     model = 0.0
    case ("isobare")
     model = - 1.0/ (a(0)*exp(a(1)-a(2)/xx) + 1.0)
+   case default
     STOP "Not available yet!"
   end select
   return
