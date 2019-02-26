@@ -846,6 +846,8 @@ module gaiast_globals
    n=4
   case ("langmuir_sips")
    n=5
+  case ("isobare")
+   n=3
  end select
  return
  end subroutine MakeInitPOP
@@ -893,6 +895,8 @@ module gaiast_globals
     model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3)) 
    case ("UserDefined")
     model = 0.0
+   case ("isobare")
+    model = - 1.0/ (a(0)*exp(a(1)-a(2)/xx) + 1.0)
     STOP "Not available yet!"
   end select
   return
@@ -1061,6 +1065,12 @@ module mod_genetic
            a(2)<0.0.or.a(3)<0.0 )then
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
+        penalty = infinite
+       else
+        penalty = 0.0
+       end if
+      case ("isobare")
+       if( a(0)<0.0 ) then
         penalty = infinite
        else
         penalty = 0.0
