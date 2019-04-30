@@ -1427,11 +1427,6 @@ end function func
 ! ======================================================================
 ! This is the simplex routine
 ! Michael F. Hutt
-! This program will attempt to minimize Rosenbrock's function using the 
-! Nelder-Mead simplex method. The program was originally developed in C. 
-! To be consistent with the way arrays are handled in C, all arrays will
-! start from 0.
-! compiles with ELF90
 ! ======================================================================
 ! Start of main program
 subroutine simplex(start, compound, n, EPSILON, scale, iprint)
