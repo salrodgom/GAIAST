@@ -1,6 +1,6 @@
 LINKFLAGS_FOR = -ffree-form -march=native
 COMP_FOR = gfortran
-GNUPLOT_SCRIPT = png.gp
+GNUPLOT_SCRIPT = png_ternary.gp
 install:
 	${COMP_FOR} ${LINKFLAGS_FOR} gaiast.f90 -o gaiast
 all:

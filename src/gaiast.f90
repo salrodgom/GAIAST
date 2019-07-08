@@ -70,7 +70,7 @@ module mod_random
   call random_number(r)
   randint = i + floor((j+1-i)*r)
  end function randint
-! 
+!
  real function r4_uniform(x,y)
   implicit none
   real,intent(in)       :: x,y
@@ -269,7 +269,7 @@ module gaiast_globals
      end do
      write(6,'(a)') string_IEEE(ii)
     end do
-    else 
+    else
      do ii=1,ncomponents
       string_IEEE(ii)=' '
      end do
@@ -808,7 +808,7 @@ module gaiast_globals
    end select c01235
   end do c01234
  end subroutine cite
-! 
+!
  subroutine MakeInitPOP(funk,n)
  implicit none
  character(100),intent(in)::  funk
@@ -853,6 +853,25 @@ module gaiast_globals
  end subroutine MakeInitPOP
 
  real function model(a,n,xx,funk,equation)
+! Availabel models:
+! ------------------------------------------------
+! freundlich
+! langmuir
+! langmuir_freundlich
+! redlich_peterson
+! redlich_peterson_dualsite
+! toth
+! langmuir_dualsite
+! langmuir_freundlich_dualsite
+! langmuir_freundlich_3order
+! dubinin_raduschkevich
+! dubinin_astakhov
+! jovanovic_smoothed
+! jovanovic
+! jovanovic_freundlich
+! langmuir_sips
+! jensen_seaton
+! --------------------------------------------------
   implicit none
   integer,intent(in)                 :: n
   real,intent(in)                    :: a(0:n-1)
@@ -878,7 +897,7 @@ module gaiast_globals
     model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5))
    case("langmuir_freundlich_3order","lf3")
     model = a(0)*a(1)*xx**a(2)/(1+a(1)*xx**a(2))+a(3)*a(4)*xx**a(5)/(1.0+a(4)*xx**a(5)) + &
-            a(6)*a(7)*xx**a(8)/(1+a(7)*xx**a(8)) 
+            a(6)*a(7)*xx**a(8)/(1+a(7)*xx**a(8))
    case ("dubinin_raduschkevich","dr") ! N=Nm*exp(-(RT/Eo ln(Po/P))^2)  #model
     model = a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
    case ("dubinin_astakhov","da")       ! N=Nm*exp(-(RT/Eo ln(Po/P))^d) #model
@@ -892,7 +911,7 @@ module gaiast_globals
    case ("langmuir_sips","ls")
     model = (a(0)*a(1)*xx)/(1+a(1)*xx) + (a(2)*a(3)*xx**a(4))/(1+a(3)*xx**a(4))
    case ("jensen_seaton","jsn")
-    model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3)) 
+    model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3))
    case ("UserDefined")
     model = 0.0
    case ("isobare")
@@ -911,7 +930,7 @@ module mod_genetic
  implicit none
  !private
  !public :: fit,init,fitness
- integer,parameter             :: ga_size     = 2**13 ! numero de cromosomas
+ integer,parameter             :: ga_size     = 2**12 ! numero de cromosomas
  real,parameter                :: ga_mutationrate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
  real,parameter                :: ga_eliterate= 0.25, GA_DisasterRate = 0.0000001
  integer,parameter             :: maxlinelength=maxnp*32
@@ -920,7 +939,7 @@ module mod_genetic
   character(len=maxlinelength) :: genotype
   real                         :: phenotype(1:maxnp)
   real                         :: fitness
- end type                     
+ end type
  type(typ_ga), pointer         :: parents(:)
  type(typ_ga), pointer         :: children(:)
  type(typ_ga), target          :: pop_alpha( ga_size )
@@ -989,7 +1008,7 @@ module mod_genetic
    phys_constrains: if ( physical_constrains ) then
      select case (funk)
       case ('langmuir')
-       if(a(0)<0.0.or.a(1)<=0.0)then  
+       if(a(0)<0.0.or.a(1)<=0.0)then
         ! constrains:
         ! a>0, b>0
         penalty = infinite
@@ -1060,7 +1079,7 @@ module mod_genetic
         penalty = infinite
        else
         penalty = 0.0
-       end if 
+       end if
       case ('langmuir_sips')
        if( a(0)<0.0.or.a(1)<0.0.or.a(4)<0.or.a(4)>1.0 .or.&
            a(2)<0.0.or.a(3)<0.0 )then
@@ -1173,7 +1192,7 @@ module mod_genetic
      suma=0
      Biodiversity = 0
      do k =1,ga_size
-      do j=k+1,ga_size 
+      do j=k+1,ga_size
        suma = suma + 1
        if( animalito(k)%genotype(1:32*np(Compound)) == animalito(j)%genotype(1:32*np(Compound)) )then
         Biodiversity = Biodiversity + 1
@@ -1326,7 +1345,7 @@ module mod_genetic
    integer,parameter  :: maxstep = 500, minstep = 10
    integer            :: kk, ii, i, k,vgh
    real               :: diff = 0.0, fit0 = 0.0
-   integer            :: eps 
+   integer            :: eps
    kk = 0
    ii = 0
    pop_alpha = [(new_citizen(compound), i = 1,ga_size)]
@@ -1393,7 +1412,7 @@ subroutine fit_simplex()
  real               :: sp(0:np(compound)-1)
  type(typ_ga)       :: axolotl
  write(6,'(a)')' '
- write(6,'(a)')'Minimising Rosenbrock`s function using the Nelder-Mead simplex method:'
+ write(6,'(a)')'Minimising the cost function using the Nelder-Mead SIMPLEX method:'
  write(6,*)'# Compound:',compound, np(compound)
  do i = 0,np(compound)-1
   axolotl%phenotype(i+1) = param(compound,i)
@@ -1410,7 +1429,7 @@ end subroutine fit_simplex
 
 ! ======================================================================
 ! This is the function to be minimized
-real function func(n,x,compound) result(rosen) 
+real function func(n,x,compound) result(rosen)
   implicit none
   integer,intent(in)   :: n
   real,   intent (in)  :: x(0:n-1)
@@ -1419,10 +1438,10 @@ real function func(n,x,compound) result(rosen)
   integer              :: i
   sp = 0.0
   do i=0,np(compound)-1
-   sp(i+1) = x(i) 
+   sp(i+1) = x(i)
   end do
   rosen = fitness(sp,compound)
-  return 
+  return
 end function func
 ! ======================================================================
 ! This is the simplex routine
@@ -1442,21 +1461,21 @@ subroutine simplex(start, compound, n, EPSILON, scale, iprint)
 ! ======================================================================
 ! Variable Definitions
 ! Integer vs = vertex with the smallest value
-! Integer vh = vertex with next smallest value 
-! Integer vg = vertex with largest value 
+! Integer vh = vertex with next smallest value
+! Integer vg = vertex with largest value
 ! Integer i,j,m,row
-! Integer k = track the number of function evaluations 
+! Integer k = track the number of function evaluations
 ! Integer itr = track the number of iterations
-! real v = holds vertices of simplex 
-! real pn,qn = values used to create initial simplex 
-! real f = value of function at each vertex 
-! real fr = value of function at reflection point 
-! real fe = value of function at expansion point 
-! real fc = value of function at contraction point 
-! real vr = reflection - coordinates 
-! real ve = expansion - coordinates 
-! real vc = contraction - coordinates 
-! real vm = centroid - coordinates 
+! real v = holds vertices of simplex
+! real pn,qn = values used to create initial simplex
+! real f = value of function at each vertex
+! real fr = value of function at reflection point
+! real fe = value of function at expansion point
+! real fc = value of function at contraction point
+! real vr = reflection - coordinates
+! real ve = expansion - coordinates
+! real vc = contraction - coordinates
+! real vm = centroid - coordinates
 ! real min
 ! real fsum,favg,s,cent
 ! real vtmp = temporary array passed to FUNC
@@ -1524,7 +1543,7 @@ subroutine simplex(start, compound, n, EPSILON, scale, iprint)
       vs = j
     END IF
    END DO
-! print out the value at each iteration 
+! print out the value at each iteration
    Write(6,'(a)') "Initial Values from genetic algorithm:"
    Write(6,*) (v(vs,j),j=0,n-1),'Fit:',f(vs)
   END IF
@@ -1590,7 +1609,7 @@ DO itr=1,MAX_IT
     k = k+1
 
 ! by making fe < fr as opposed to fe < f(vs), Rosenbrocks function
-! takes 62 iterations as opposed to 64. 
+! takes 62 iterations as opposed to 64.
 
     If (fe .LT. fr) Then
       DO j=0,n-1
@@ -1621,7 +1640,7 @@ DO itr=1,MAX_IT
 ! at this point the contraction is not successful,
 ! we must halve the distance from vs to all the
 ! vertices of the simplex and then continue.
-! 10/31/97 - modified C program to account for 
+! 10/31/97 - modified C program to account for
 ! all vertices.
 
   Else
@@ -1652,7 +1671,7 @@ DO itr=1,MAX_IT
   !    vs = j
   !  END IF
   !END DO
-! print out the value at each iteration 
+! print out the value at each iteration
   !IF (iprint == 0) THEN
   !  Write(6,*) "Iteration:",itr,(v(vs,j),j=0,n-1),'Value:',f(vs)
   !END IF
@@ -1669,7 +1688,7 @@ DO itr=1,MAX_IT
   !s = sqrt(s)
   If (favg .LT. EPSILON.or.itr==MAX_IT) Then
 
-! print out the value at each iteration 
+! print out the value at each iteration
    Write(6,'(a,1x,i6)') "Final Values:", itr
    Write(6,*) (v(vs,j),j=0,n-1),'Fit:',f(vs)
    IF(itr/=MAX_IT)then
@@ -1721,6 +1740,7 @@ program main
 "#   \    \_\  \/    |    \|   |/    |    \ /        \  |    |     ",&
 "#    \______  /\____|__  /|___|\____|__  //_______  /  |____|     ",&
 "#           \/         \/              \/         \/              ",&
+"# flama, cabesa.",&
 " "
  call read_input()
  if (seed_flag) then
@@ -1730,7 +1750,7 @@ program main
  call ReadIsotherms()
  if(flag)then
   open(111,file="iso.dat")
-  do compound = 1, ncomponents 
+  do compound = 1, ncomponents
    write(6,'(a)')' '
    write(6,'("Fitting compound:",1x,i2)') compound
    write(6,'(a14,1x,a24,1x,a24,10x,a14)')'Compound/Step:','Cromosome:','Parameters','Control'
