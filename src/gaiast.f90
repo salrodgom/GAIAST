@@ -52,18 +52,18 @@ module mod_random
  contains
   ! This simple PRNG might not be good enough for real work, but is
   ! sufficient for seeding a better PRNG.
-  function lcg(s)
-    integer :: lcg
-    integer(int64) :: s
+  pure integer function lcg(s)
+    integer(int64),intent(in) :: s
     if (s == 0) then
-       s = 104729
+     s = 104729
     else
-       s = mod(s, 4294967296_int64)
+     s = mod(s, 4294967296_int64)
     end if
     s = mod(s * 279470273_int64, 4294967291_int64)
     lcg = int(mod(s, int(huge(0), int64)), kind(0))
   end function lcg
  end subroutine init_random_seed
+!
  integer function randint(i,j)
   integer,intent(in)    :: i,j
   real                  :: r
@@ -80,64 +80,57 @@ module mod_random
   return
  end function r4_uniform
 end module mod_random
-
+!
 module newton
     implicit none
     integer, parameter      :: maxiter = 20
     real(kind=8), parameter :: tol = 1.d-14
-contains
-subroutine solve(f, fp, x0, x, iters, debug)
-    ! Estimate the zero of f(x) using Newton's method.
-    ! Input:
-    !   f:  the function to find a root of
-    !   fp: function returning the derivative f'
-    !   x0: the initial guess
-    !   debug: logical, prints iterations if debug=.true.
-    ! Returns:
-    !   the estimate x satisfying f(x)=0 (assumes Newton converged!)
-    !   the number of iterations iters
-    implicit none
-    real(kind=8), intent(in)    :: x0
-    real(kind=8), external      :: f, fp
-    logical, intent(in)         :: debug
-    real(kind=8), intent(out)   :: x
-    integer, intent(out)        :: iters
-    ! Declare any local variables:
-    real(kind=8)                :: deltax, fx, fxprime
-    integer                     :: k
-    ! initial guess
-    x = x0
-    if (debug) then
-        print 11, x
- 11     format('Initial guess: x = ', e22.15)
-        endif
-    ! Newton iteration to find a zero of f(x)
-    do k=1,maxiter
-        ! evaluate function and its derivative:
-        fx = f(x)
-        fxprime = fp(x)
-        if (abs(fx) < tol) then
-            exit  ! jump out of do loop
-            endif
-        ! compute Newton increment x:
-        deltax = fx/fxprime
-        ! update x:
-        x = x - deltax
-        if (debug) then
-            print 12, k,x
- 12         format('After', i3, ' iterations, x = ', e22.15)
-            endif
-        enddo
-    if (k > maxiter) then
-        ! might not have converged
-        fx = f(x)
-        if (abs(fx) > tol) then
-            print *, '[Warning]: calculation has not converged yet'
-            endif
-        endif
-    ! number of iterations taken:
-    iters = k-1
-end subroutine solve
+ contains
+ !
+ subroutine solve(f, fp, x0, x, iters, debug)
+  ! Estimate the zero of f(x) using Newton's method.
+  ! Input:
+  !   f:  the function to find a root of
+  !   fp: function returning the derivative f'
+  !   x0: the initial guess
+  !   debug: logical, prints iterations if debug=.true.
+  ! Returns:
+  !   the estimate x satisfying f(x)=0 (assumes Newton converged!)
+  !   the number of iterations iters
+  implicit none
+  real(kind=8), intent(in)    :: x0
+  real(kind=8), external      :: f, fp
+  logical, intent(in)         :: debug
+  real(kind=8), intent(out)   :: x
+  integer, intent(out)        :: iters
+  ! Declare any local variables:
+  real(kind=8)                :: deltax, fx, fxprime
+  integer                     :: k
+  ! initial guess
+  x = x0
+  if (debug) write(6,'(a,1x,e22.15)') 'Initial guess: x = ',x
+  ! Newton iteration to find a zero of f(x)
+  do k=1,maxiter
+      ! evaluate function and its derivative:
+      fx = f(x)
+      fxprime = fp(x)
+      if (abs(fx) < tol) then
+          exit  ! jump out of do loop
+          endif
+      ! compute Newton increment x:
+      deltax = fx/fxprime
+      ! update x:
+      x = x - deltax
+      if (debug) write(6,'(a,i3,1x,a,1x,e22.15)' 'After', i3, ' iterations, x = ',x
+  enddo
+  if (k > maxiter) then
+   ! might not have converged
+   fx = f(x)
+   if (abs(fx) > tol) write(6,'(a)') '[Warning]: calculation has not converged yet'
+  endif
+  ! number of iterations taken:
+  iters = k-1
+ end subroutine solve
 end module newton
 
 module qsort_c_module
@@ -149,6 +142,7 @@ module qsort_c_module
  public  :: QsortC
  private :: Partition
  contains
+!
  recursive subroutine QsortC(A)
   real(16), intent(in out), dimension(:) :: A
   integer                            :: iq
@@ -158,6 +152,7 @@ module qsort_c_module
      call QsortC(A(iq:))
   endif
  end subroutine QsortC
+!
  subroutine Partition(A, marker)
   real(16), intent(in out), dimension(:) :: A
   integer, intent(out)               :: marker
@@ -322,11 +317,11 @@ module gaiast_globals
    end do
   end if
 !  ...
-   write(6,*)'Inf:',inferior
-   write(6,*)'Sup:',superior
+  write(6,*)'Inf:',inferior
+  write(6,*)'Sup:',superior
 !  ...
-   superior = log( superior )
-   inferior = log( inferior )
+  superior = log( superior )
+  inferior = log( inferior )
   dx = real((superior-inferior)/real(intervalos))   ! log-space
 ! ...
   open(222,file='curves.txt')
@@ -342,13 +337,14 @@ module gaiast_globals
     xxx(compound) = exp( inferior + ib*dx )            ! real space
     x0=xxx(compound)
     yyy(compound) = model(apar, np(compound), x0, funk )
-!   ...
+!   integration of the spread pressure:
     y0 = exp( inferior + (ib+1)*dx )
     x0 = model(apar, np(compound), y0, funk )
-!   ...
     x0 = (yyy(compound) + x0)*dx/2.0
     s1(compound) = s1(compound) + x0
+! spread pressure: definition
     pi(compound,ib+1) = s1(compound)
+! adsorption value:
     iso(compound,ib+1) = yyy(compound)
     deallocate(apar)
    end do
@@ -357,7 +353,7 @@ module gaiast_globals
   close(222)
   return
  end subroutine bounds
-
+!
  subroutine IAST_binary()
   implicit none
   integer        :: i,j,k,ijk
@@ -367,11 +363,15 @@ module gaiast_globals
   open(unit=104,file='adsorcion.dat')
   do i=0,intervalos-1
    do j=0,intervalos-1
+! pi1 and pi2 is already integrated in the subroutine bound()
     comp1 = abs(pi(1,i)-pi(2,j))
     if (comp1 <= tol) then
      presion(1) = exp(inferior+i*dx)
      presion(2) = exp(inferior+j*dx)
-! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1 + w(o3) )
+! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula:
+!    x1=1/(1+p1*y2/p2Y1 + w(o3) )
+!    x2=1 - x2
+! }}
      concx(1) = presion(2)*concy(1) / (concy(2)*presion(1) + concy(1)*presion(2))
      concx(2) = 1.0 - concx(1)   ! }}
      p  = presion(1)*concx(1)/concy(1)
@@ -385,7 +385,7 @@ module gaiast_globals
   close(104)
   return
  end subroutine IAST_binary
-
+! ...
  subroutine IAST_multicomponent()
   implicit none
   integer          :: i,j,ijk,nn
@@ -408,11 +408,9 @@ module gaiast_globals
     aux2 = 0
     auxP = datas(1,1,npress(1))
     presion(1,i) = exp(inferior+i*dx)
-    !presion(1,i) = exp(log(datas(1,1,1))+(log(auxP)-log(datas(1,1,1)))*(i+1)/intervalos)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
     validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG!
-    !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue,validPressure
     if(validPressure.and.i>0)then
      !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
      continue
@@ -420,7 +418,6 @@ module gaiast_globals
      i=i+1
      cycle ScanPressures
     end if
-    !lastPi = piValue
 ! }}
     aux1 = 0.0
 ! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula: x1=1/(1+P1Y2/P2Y1+P1Y3/P3Y1+...)
@@ -483,7 +480,7 @@ module gaiast_globals
   close(104)
   return
  end subroutine IAST_multicomponent
-
+! ...
  logical function CalculatePressures(presion,point,lastPi,piValue)
   implicit none
   integer,intent(in) :: point
@@ -513,18 +510,18 @@ module gaiast_globals
       !case('langmuir_dualsite')
      end select
     case ('integral')
-    oldPi = lastPi(k)
-    apar = 0.0
-    do j = 0, n-1
-     apar(j) = param(k,j)
-    end do
-    if (point==0) then
-     p = 0.0
-     presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
-    else
-     p = presion(k,point-1)
-     presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
-    end if
+     oldPi = lastPi(k)
+     apar = 0.0
+     do j = 0, n-1
+      apar(j) = param(k,j)
+     end do
+     if (point==0) then
+      p = 0.0
+      presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+     else
+      p = presion(k,point-1)
+      presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
+     end if
     case default
      presion(k,point) = CalculatePressureLinear(k,piValue)
    end select
@@ -545,7 +542,7 @@ module gaiast_globals
 ! }}
   return
  end function CalculatePressures
-
+! ...
  real function CalculatePressureLinear(compound,piValue)
   implicit none
   integer        :: j,compound
@@ -576,7 +573,7 @@ module gaiast_globals
   if(lastPass.and.piGuess<piValue) CalculatePressureLinear = 0.0
   return
  end function CalculatePressureLinear
-
+!
  real function SolveNewtonLinear(compound,piValue,n)
   implicit none
   integer,intent(in) :: compound,n
@@ -1443,42 +1440,38 @@ real function func(n,x,compound) result(rosen)
   rosen = fitness(sp,compound)
   return
 end function func
-! ======================================================================
 ! This is the simplex routine
 ! Michael F. Hutt
-! ======================================================================
-! Start of main program
 subroutine simplex(start, compound, n, EPSILON, scale, iprint)
   implicit none
   integer, intent (in)                   :: n, iprint, compound
   real, intent (inout), dimension(0:n-1) :: start
   real, intent (in)                      :: EPSILON, scale
-! Define Constants
   integer, parameter :: MAX_IT = 1000000
-  real, parameter :: ALPHA=1.0
-  real, parameter :: BETA=0.5
-  real, parameter :: GAMMA=2.0
+  real, parameter    :: ALPHA=1.0
+  real, parameter    :: BETA=0.5
+  real, parameter    :: GAMMA=2.0
 ! ======================================================================
 ! Variable Definitions
-! Integer vs = vertex with the smallest value
-! Integer vh = vertex with next smallest value
-! Integer vg = vertex with largest value
-! Integer i,j,m,row
-! Integer k = track the number of function evaluations
-! Integer itr = track the number of iterations
-! real v = holds vertices of simplex
-! real pn,qn = values used to create initial simplex
-! real f = value of function at each vertex
-! real fr = value of function at reflection point
-! real fe = value of function at expansion point
-! real fc = value of function at contraction point
-! real vr = reflection - coordinates
-! real ve = expansion - coordinates
-! real vc = contraction - coordinates
-! real vm = centroid - coordinates
-! real min
-! real fsum,favg,s,cent
-! real vtmp = temporary array passed to FUNC
+! vs = vertex with the smallest value
+! vh = vertex with next smallest value
+! vg = vertex with largest value
+! i,j,m,row
+! k = track the number of function evaluations
+! itr = track the number of iterations
+! v = holds vertices of simplex
+! pn,qn = values used to create initial simplex
+! f = value of function at each vertex
+! fr = value of function at reflection point
+! fe = value of function at expansion point
+! fc = value of function at contraction point
+! vr = reflection - coordinates
+! ve = expansion - coordinates
+! vc = contraction - coordinates
+! vm = centroid - coordinates
+! min
+! fsum,favg,s,cent
+! vtmp = temporary array passed to FUNC
 ! ======================================================================
   Integer :: vs,vh,vg
   Integer :: i,j,k,itr,m,row

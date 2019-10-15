@@ -1,4 +1,4 @@
-LINKFLAGS_FOR = -ffree-form -march=native
+LINKFLAGS_FOR = -ffree-form -march=native -Wall -O3
 COMP_FOR = gfortran
 GNUPLOT_SCRIPT = png_ternary.gp
 install:
