@@ -32,7 +32,7 @@ GAIAST is an open source project, it is distributed under a multi-licensing syst
 
 ### What is gaIAST?
 
-- We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the bundle,
+- We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the adsorbed phase,
 based only on the knowledge of the pure adsorption isotherms of the individual components.
 
 ### Updates:
