@@ -337,7 +337,7 @@ module gaiast_globals
     xxx(compound) = exp( inferior + ib*dx )            ! real space
     x0=xxx(compound)
     yyy(compound) = model(apar, np(compound), x0, funk )
-!   integration of the spread pressure:
+! integration of the spread pressure:
     y0 = exp( inferior + (ib+1)*dx )
     x0 = model(apar, np(compound), y0, funk )
     x0 = (yyy(compound) + x0)*dx/2.0
@@ -357,15 +357,14 @@ module gaiast_globals
  subroutine IAST_binary()
   implicit none
   integer        :: i,j,k,ijk
-  real           :: comp1,comp2,dx,p,concx(ncomponents),aux1,aux2
+  real           :: dx,p,concx(ncomponents),aux1,aux2
   real           :: presion(ncomponents),n(0:ncomponents)
   dx = real((superior-inferior)/intervalos)
   open(unit=104,file='adsorcion.dat')
   do i=0,intervalos-1
    do j=0,intervalos-1
 ! pi1 and pi2 is already integrated in the subroutine bound()
-    comp1 = abs(pi(1,i)-pi(2,j))
-    if (comp1 <= tol) then
+    if ( abs(pi(1,i)-pi(2,j)) <= tol) then
      presion(1) = exp(inferior+i*dx)
      presion(2) = exp(inferior+j*dx)
 ! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula:
@@ -410,7 +409,7 @@ module gaiast_globals
     presion(1,i) = exp(inferior+i*dx)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
-    validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG!
+    validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG! (why??, is it a mistake?)
     if(validPressure.and.i>0)then
      !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
      continue
