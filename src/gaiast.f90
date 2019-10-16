@@ -54,13 +54,14 @@ module mod_random
   ! sufficient for seeding a better PRNG.
   pure integer function lcg(s)
     integer(int64),intent(in) :: s
+    integer(int64)            :: ss
     if (s == 0) then
-     s = 104729
+     ss = 104729
     else
-     s = mod(s, 4294967296_int64)
+     ss = mod(s, 4294967296_int64)
     end if
-    s = mod(s * 279470273_int64, 4294967291_int64)
-    lcg = int(mod(s, int(huge(0), int64)), kind(0))
+    ss = mod(ss * 279470273_int64, 4294967291_int64)
+    lcg = int(mod(ss, int(huge(0), int64)), kind(0))
   end function lcg
  end subroutine init_random_seed
 !
@@ -81,57 +82,57 @@ module mod_random
  end function r4_uniform
 end module mod_random
 !
-module newton
-    implicit none
-    integer, parameter      :: maxiter = 20
-    real(kind=8), parameter :: tol = 1.d-14
- contains
- !
- subroutine solve(f, fp, x0, x, iters, debug)
-  ! Estimate the zero of f(x) using Newton's method.
-  ! Input:
-  !   f:  the function to find a root of
-  !   fp: function returning the derivative f'
-  !   x0: the initial guess
-  !   debug: logical, prints iterations if debug=.true.
-  ! Returns:
-  !   the estimate x satisfying f(x)=0 (assumes Newton converged!)
-  !   the number of iterations iters
-  implicit none
-  real(kind=8), intent(in)    :: x0
-  real(kind=8), external      :: f, fp
-  logical, intent(in)         :: debug
-  real(kind=8), intent(out)   :: x
-  integer, intent(out)        :: iters
-  ! Declare any local variables:
-  real(kind=8)                :: deltax, fx, fxprime
-  integer                     :: k
-  ! initial guess
-  x = x0
-  if (debug) write(6,'(a,1x,e22.15)') 'Initial guess: x = ',x
-  ! Newton iteration to find a zero of f(x)
-  do k=1,maxiter
-      ! evaluate function and its derivative:
-      fx = f(x)
-      fxprime = fp(x)
-      if (abs(fx) < tol) then
-          exit  ! jump out of do loop
-          endif
-      ! compute Newton increment x:
-      deltax = fx/fxprime
-      ! update x:
-      x = x - deltax
-      if (debug) write(6,'(a,i3,1x,a,1x,e22.15)' 'After', i3, ' iterations, x = ',x
-  enddo
-  if (k > maxiter) then
-   ! might not have converged
-   fx = f(x)
-   if (abs(fx) > tol) write(6,'(a)') '[Warning]: calculation has not converged yet'
-  endif
-  ! number of iterations taken:
-  iters = k-1
- end subroutine solve
-end module newton
+!module newton
+!   implicit none
+!   integer, parameter      :: maxiter = 20
+!   real(kind=8), parameter :: tol = 1.d-14
+!contains
+!!
+!subroutine solve(f, fp, x0, x, iters, debug)
+! ! Estimate the zero of f(x) using Newton's method.
+! ! Input:
+! !   f:  the function to find a root of
+! !   fp: function returning the derivative f'
+! !   x0: the initial guess
+! !   debug: logical, prints iterations if debug=.true.
+! ! Returns:
+! !   the estimate x satisfying f(x)=0 (assumes Newton converged!)
+! !   the number of iterations iters
+! implicit none
+! real(kind=8), intent(in)    :: x0
+! real(kind=8), external      :: f, fp
+! logical, intent(in)         :: debug
+! real(kind=8), intent(out)   :: x
+! integer, intent(out)        :: iters
+! ! Declare any local variables:
+! real(kind=8)                :: deltax, fx, fxprime
+! integer                     :: k
+! ! initial guess
+! x = x0
+! if (debug) write(6,'(a,1x,e22.15)') 'Initial guess: x = ',x
+! ! Newton iteration to find a zero of f(x)
+! do k=1,maxiter
+!     ! evaluate function and its derivative:
+!     fx = f(x)
+!     fxprime = fp(x)
+!     if (abs(fx) < tol) then
+!         exit  ! jump out of do loop
+!         endif
+!     ! compute Newton increment x:
+!     deltax = fx/fxprime
+!     ! update x:
+!     x = x - deltax
+!     if (debug) write(6,'(a,i3,1x,a,1x,e22.15)')'After',k,'iterations, x =',x
+! enddo
+! if (k > maxiter) then
+!  ! might not have converged
+!  fx = f(x)
+!  if (abs(fx) > tol) write(6,'(a)') '[Warning]: calculation has not converged yet'
+! endif
+! ! number of iterations taken:
+! iters = k-1
+!end subroutine solve
+!end module newton
 
 module qsort_c_module
 ! Recursive Fortran 95 quicksort routine sorts real numbers into ascending numerical order
@@ -210,6 +211,7 @@ module gaiast_globals
  character(5)               :: inpt
  logical                    :: flag = .true., FlagFire = .false.,seed_flag=.true.
  logical                    :: physical_constrains = .false., range_flag =.true.
+ logical                    :: Always_Use_Multicomponent_Solver=.true.
  logical                    :: refit_flag = .false.
  real,parameter             :: R = 0.008314472 ! kJ / mol / K
  real                       :: T = 298.0
@@ -356,15 +358,25 @@ module gaiast_globals
 !
  subroutine IAST_binary()
   implicit none
-  integer        :: i,j,k,ijk
-  real           :: dx,p,concx(ncomponents),aux1,aux2
-  real           :: presion(ncomponents),n(0:ncomponents)
+  integer           :: i,j,k,ijk
+  real              :: dx,p,concx(ncomponents),aux1,aux2
+  real              :: min_tolerance
+  integer           :: j_id
+  real, allocatable :: j_tolerance(:)
+  real              :: presion(ncomponents),n(0:ncomponents)
   dx = real((superior-inferior)/intervalos)
+  allocate( j_tolerance(0:intervalos-1 ))
   open(unit=104,file='adsorcion.dat')
   do i=0,intervalos-1
    do j=0,intervalos-1
-! pi1 and pi2 is already integrated in the subroutine bound()
-    if ( abs(pi(1,i)-pi(2,j)) <= tol) then
+    if( abs( pi(1,i) - pi(2,j)) < tol ) then
+   !j_tolerance = 0.0
+   !j_tolerance(0:intervalos-1) = abs( pi(1,i) - pi(2,0:intervalos-1) )
+   !min_tolerance = minval( j_tolerance )
+   !j = minloc( j_tolerance,1,(j_tolerance<tol))
+   !j = minloc( j_tolerance,1)
+   !if( min_tolerance > tol ) STOP '[error] Tolerance value is bigger than the tolerance value by default]'
+   ! {{
      presion(1) = exp(inferior+i*dx)
      presion(2) = exp(inferior+j*dx)
 ! {{ Calculate molar fraction of component 1 at spread pressure Pi from a general formula:
@@ -378,10 +390,12 @@ module gaiast_globals
      n(2) = iso(2,j)*concx(2)
      n(0) = n(1) + n(2)
      write(104,*)p,(n(ijk),ijk=1,ncomponents),n(0)
+   ! }}
     end if
    end do
   end do
   close(104)
+  deallocate(j_tolerance)
   return
  end subroutine IAST_binary
 ! ...
@@ -488,7 +502,7 @@ module gaiast_globals
   real               :: oldPi, p,a1,a2,b1,b2,c,a,p1,p2
   integer            :: k,j,n
   real,allocatable   :: apar(:)
-  character(100)     :: funk,mode= 'integral' ! 'Newton'
+  character(100)     :: funk,mode= 'integral' 
   CalculatePressures = .true.
   k=1
   calc: do while (k<=ncomponents.and.CalculatePressures)
@@ -588,43 +602,43 @@ module gaiast_globals
   ! Start looking for a solution at the middle of the interval [P1,P2]
   X=(datas(1,compound,n+1)+datas(1,compound,n))*0.5
   ! Calculate the value of the function at point X
-  Y=a*X+b*log(X)+c
-  do while(abs(Y)>precision_newton)
-   ! Calculate the gradient in the point X
-   gradient = 0.0
-   gradient = a+b/X
-   if (gradient/=0) then
-    ! Calculate the equation of the tangent
-    X0 = Y-gradient*X
-    ! Calculate the 0 point of the tangent and make it our new X
-    X = -X0/gradient
-    ! Calculate the value of the function at point X
-    Y = a*X+b*log(X)+c
-   elseif (X > datas(1,compound,n+1)) then
-    X=X-precision_Newton
-   else
-    X=X+precision_Newton
-   end if
-  end do
-  if(X<datas(1,compound,n).or.X>datas(1,compound,n+1)) then
-   write(6,*)"WARNING: A solution for the linear equation was not found between pressures",&
-    datas(1,compound,n),'and',datas(1,compound,n+1),"."
-   write(6,*)"No pressure will be considered in this interval"
-   SolveNewtonLinear = 0.0
+ Y=a*X+b*log(X)+c
+ do while(abs(Y)>precision_newton)
+  ! Calculate the gradient in the point X
+  gradient = 0.0
+  gradient = a+b/X
+  if (gradient/=0) then
+   ! Calculate the equation of the tangent
+   X0 = Y-gradient*X
+   ! Calculate the 0 point of the tangent and make it our new X
+   X = -X0/gradient
+   ! Calculate the value of the function at point X
+   Y = a*X+b*log(X)+c
+  elseif (X > datas(1,compound,n+1)) then
+   X=X-precision_Newton
   else
-   SolveNewtonLinear = X
+   X=X+precision_Newton
   end if
-  return
+ end do
+ if(X<datas(1,compound,n).or.X>datas(1,compound,n+1)) then
+  write(6,*)"WARNING: A solution for the linear equation was not found between pressures",&
+   datas(1,compound,n),'and',datas(1,compound,n+1),"."
+  write(6,*)"No pressure will be considered in this interval"
+  SolveNewtonLinear = 0.0
+ else
+  SolveNewtonLinear = X
+ end if
+ return
  end function SolveNewtonLinear
 
- real function integrate(x0,x1,a,n,funk)
+ pure real function integrate(x0,x1,a,n,funk)
   implicit none
   integer              ::  i
   integer,intent(in)   ::  n
+  real,intent(in)      ::  x0,x1     ! intervalo (real)
+  real,intent(in)      ::  a(0:n-1)  ! 
   real                 ::  delta,x
-  real,intent(in)      ::  x0,x1
   real                 ::  factor
-  real,intent(in)      ::  a(0:n-1)
   character(100),intent(in):: funk
   delta=(x1-x0)/(integration_points)
   area: do i = 0,integration_points
@@ -848,7 +862,7 @@ module gaiast_globals
  return
  end subroutine MakeInitPOP
 
- real function model(a,n,xx,funk,equation)
+ pure real function model(a,n,xx,funk,equation)
 ! Availabel models:
 ! ------------------------------------------------
 ! freundlich
@@ -912,8 +926,6 @@ module gaiast_globals
     model = 0.0
    case ("isobare")
     model = 1.0/(a(0)*exp(a(1) - a(2)/xx) + a(3))
-   case default
-    STOP "Not available yet!"
   end select
   return
  end function model
@@ -926,11 +938,12 @@ module mod_genetic
  implicit none
  !private
  !public :: fit,init,fitness
- integer,parameter             :: ga_size     = 2**12 ! numero de cromosomas
- real,parameter                :: ga_mutationrate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
- real,parameter                :: ga_eliterate= 0.25, GA_DisasterRate = 0.0000001
+ integer,parameter             :: GA_size     = 2**12 ! numero de cromosomas
+ real,parameter                :: GA_MutationRate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
+ real,parameter                :: GA_EliteRate= 0.25, GA_MotleyCrowdRate=0.25,GA_DisasterRate = 0.0000001
  integer,parameter             :: maxlinelength=maxnp*32
- integer,parameter             :: ga_elitists = int( ga_size * ga_eliterate)
+ integer,parameter             :: ga_Elitists = int( ga_size * ga_eliterate)
+ integer,parameter             :: ga_Motleists = int( ga_size - ga_size*GA_MotleyCrowdRate)
  type                          :: typ_ga
   character(len=maxlinelength) :: genotype
   real                         :: phenotype(1:maxnp)
@@ -941,7 +954,7 @@ module mod_genetic
  type(typ_ga), target          :: pop_alpha( ga_size )
  type(typ_ga), target          :: pop_beta( ga_size )
  contains
-
+!
   type(typ_ga) function new_citizen(compound)
    implicit none
    integer     :: i,compound,j,k
@@ -955,7 +968,7 @@ module mod_genetic
    new_citizen%fitness = fitness( new_citizen%phenotype,compound)
    return
   end function new_citizen
-
+!
   subroutine UpdateCitizen( axolotl ,compound )
    implicit none
    integer                     :: compound,i,GA_ELITISTS
@@ -967,36 +980,15 @@ module mod_genetic
    axolotl%fitness = fitness( axolotl%phenotype,compound)
    return
   end subroutine UpdateCitizen
-
-!  real function Fitness(phenotype,compound)
-!   implicit none
-!   real, intent(in)    :: phenotype(maxnp)
-!   integer             :: i,compound,k = 0
-!   real                :: a(0:np(compound)-1),xx,yy
-!   character(len=100)  :: funk
-!   logical             :: flagzero = .false.
-!   real                :: infinite = HUGE(40843542)
-!!   funk = ajuste(compound)
-!   do i = 0,np(compound)-1
-!    a(i) = phenotype(i+1)
-!   end do
-!   fitness = 0.0
-!   do i = 1, npress(compound)
-!    xx = datas(1,compound,i)
-!    yy = datas(2,compound,i)
-!    fitness = fitness + 0.5*( yy - model(a,np(compound),xx,funk) )**2
-!   end do
-!   return
-!  end function Fitness
-  real function Fitness(phenotype,compound)
+! 
+  pure real function Fitness(phenotype,compound)
    implicit none
    real, intent(in)    :: phenotype(maxnp)
-   integer             :: i,compound,k = 0
-   real                :: a(0:np(compound)-1),xx,yy
+   integer,intent(in)  :: compound
+   integer             :: i
+   real                :: a(0:np(compound)-1),xx,yy,penalty
    character(len=100)  :: funk
-   logical             :: flagzero = .false.
-   !logical             :: physical_constrains = .false.
-   real                :: infinite = 50.0,penalty = 0.0
+   real,parameter      :: infinite = 50.0
    funk = ajuste(compound)
    do i = 0,np(compound)-1
     a(i) = phenotype(i+1)
@@ -1230,11 +1222,8 @@ module mod_genetic
    integer,intent(in) ::  Compound
    integer            :: k = 0, i, j
    real               :: rrr
-   do i = GA_ELITISTS + 1, GA_Size
-    do j=1,32*np(compound)
-     Children%genotype(j:j) = achar(randint(48,49))
-    end do
-    call UpdateCitizen(Children(i),Compound)
+   do i = 2, GA_Size
+    children(i) = new_citizen(compound)
    end do
    return
   end subroutine NuclearDisaster
@@ -1254,86 +1243,54 @@ module mod_genetic
    children(:GA_ELITISTS) = parents(:GA_ELITISTS)
    return
   end subroutine
-
+!
+  subroutine crossover(s1,s2,i1,i2,j1,j2)
+   implicit none
+   integer,intent(in) :: s1,s2,i1,i2,j1,j2
+   integer            :: k1,k2,spos,i
+   do i=s1,s2
+    call choose_randomly(i1,i2,j1,j2,k1,k2)
+    spos = randint(0, 32*np(compound) )
+    children(i)%genotype = parents(k1)%genotype(:spos) // parents(k2)%genotype(spos+1:)
+   end do
+   return
+  end subroutine crossover
+!
+  subroutine choose_randomly(kk1,kk2,jj1,jj2,ii1,ii2)
+   implicit none
+   integer,intent(in)  :: kk1,kk2,jj1,jj2
+   integer,intent(out) :: ii1,ii2
+   ii1  = randint(kk1, kk2)
+   ii2  = randint(jj1, jj2)
+   do while ( ii1 == ii2 )
+    ii2 = randint(jj1,jj2)
+   end do
+   return
+  end subroutine choose_randomly
+!
   subroutine Mate(compound)
-   integer             :: i, i1, i2, spos
+   implicit none
+   integer             :: i,i1,i2,spos
    integer, intent(in) :: compound
    real                :: rrr
+   ! Retain the first 25% of the childrens
    call Elitism()
-   do i = GA_ELITISTS + 1, ga_size
-    ! Crossover:
-    ! {{ eleccion random del primer 50% de la tabla
-    call choose_randomly(i1,i2)
-    ! }}
-    ! {{ eleccion proporcionalmente a su fitness
-    !call choose_propto_fitness(i1,i2)
-    !write(6,*)i1,i2
-    ! }}
-    spos = randint(0, 32*np(compound) )
-    children(i)%genotype = parents(i1)%genotype(:spos) // parents(i2)%genotype(spos+1:)
-    ! Mutate and NuclearDisaster:
-    rrr = r4_uniform(0.0,1.0)
-    if ( rrr < GA_MUTATIONRATE) then
-     call Mutate(children(i),compound)
-    else if ( rrr >= GA_MutationRate .and. rrr <= GA_MutationRate + GA_DisasterRate ) then
-     call NuclearDisaster(Compound)
-    end if
-   end do
+   ! Crossover:
+   call crossover(ga_Motleists+1,ga_size-100,1,GA_elitists,GA_elitists+1,GA_size)
+   call Crossover(GA_elitists+1,ga_Motleists,1,GA_elitists,1,GA_elitists)
+   ! Replace the last 100 of the childrens by new childrens
+   children(GA_size-100:GA_size) = new_citizen(compound)
    do i = 1, ga_size
+    ! Mutation:
+    ! I'll respect the first 10% of the childrens of the mutations.
+    if(i>=GA_elitists*0.1)then
+     rrr = r4_uniform(0.0,1.0)
+     if ( rrr < GA_MutationRate) call Mutate(children(i),compound)
+    end if
     call UpdateCitizen(children(i),compound)
    end do
    return
   end subroutine Mate
-
-  subroutine choose_randomly(j1,j2)
-   implicit none
-   integer,intent(out) :: j1,j2
-   j1  = randint(1, int(ga_size/2))
-   j2  = randint(1, int(ga_size/2))
-   do while ( j1 == j2 )
-    j2 = randint(1, int(ga_size/2))
-   end do
-   return
-  end subroutine choose_randomly
-
-  subroutine choose_propto_fitness(j1,j2)
-   implicit none
-   integer,intent(out) :: j1,j2
-   integer             :: i
-   real                :: ftnss(ga_size),prop(0:ga_size)=0.0,rrr1,rrr2
-   real                :: infinity = HUGE(2147483647)
-   rrr1 = 0.0
-   do i = 1, ga_size
-    ftnss(i) = 1.0/parents(i)%fitness
-    if ( isnan( parents(i)%fitness ) ) ftnss(i) = 0.0
-    if ( parents(i)%fitness > infinity ) ftnss(i) = 0.0
-    prop(i) = ftnss(i)
-    if( ftnss(i) >= infinity ) then
-      rrr1 = rrr1 + infinity
-    else
-      rrr1 = rrr1 + ftnss(i)
-    end if
-   end do
-   prop = prop / rrr1
-   ! select 1:
-    rrr1 = r4_uniform(0.0,1.0)
-    slct1: do i=1,ga_size
-     if(rrr1<=prop(i-1).and.rrr1>prop(i))then
-      j1 = i
-     end if
-    end do slct1
-    ! select 2:
-    rrr2 = r4_uniform(0.0,1.0)
-    do while ( rrr1 == rrr2 )
-     rrr2 = r4_uniform(0.0,1.0)
-    end do
-    slct2: do i=1,ga_size
-     if(rrr2<=prop(i-1).and.rrr2>prop(i))then
-      j2 = i
-     end if
-    end do slct2
-   return
-  end subroutine choose_propto_fitness
 !
   subroutine Fit(compound)
    implicit none
@@ -1369,7 +1326,7 @@ module mod_genetic
     fire: if ( FlagFire ) then
      if ( ii >= minstep .and. parents(1)%fitness <= TolFire ) exit converge
     else
-     if( ii>=minstep .and. parents(1)%fitness <= 0.1 .and. abs(parents(1)%fitness-fit0) <= 1e-4)then
+     if( ii>=minstep .and. parents(1)%fitness <= 0.2 .and. abs(parents(1)%fitness-fit0) <= 1e-4)then
       kk = kk + 1
      else
       kk = 0
@@ -1751,10 +1708,12 @@ program main
   end do
  end if
  call bounds()
- if(ncomponents>2)then
-   call IAST_multicomponent()
+ if(ncomponents>2.or.Always_Use_Multicomponent_Solver)then
+  ! Always_Use_Multicomponent_Solver defined in the header of gaiast_globals module
+  call IAST_multicomponent()
  else
-   call IAST_binary()
+  ! It works fine
+  call IAST_binary()
  end if
  call cite()
  close(111)

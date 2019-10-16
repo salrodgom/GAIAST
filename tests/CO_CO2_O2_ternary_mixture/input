@@ -11,9 +11,9 @@
 # dubinin_raduschkevich:        a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**2)
 # dubinin_astakhov              a(0)*exp(-((R*T/a(1))*log(a(2)/xx) )**a(3))
 ncomp 3
-1.0  langmuir_dualsite 
-1.0  langmuir_dualsite
-1.0  langmuir_dualsite
+1.0  langmuir_sips
+1.0  langmuir_sips
+1.0  langmuir_sips
 # inter: numero de presiones que van a tener las isotermas  de la mezcla
 inter 1024
 # ffit? : valor logico, por defecto .true. :  
@@ -31,4 +31,4 @@ ffit? .true.
 #RSeed 1225935557
 #temp  298.0
 # tol, tolerancia del IAST para considerar que la presion parcial de los componentes esta igualada, por defecto 0.001
-#tol   0.001
+tol   0.001

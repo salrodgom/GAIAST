@@ -13,6 +13,7 @@ set ylabel 'Loading / a. u.'
 set multiplot layout 1,2
 set logscale x
 set yrange [0:]
+set xrange [1e4:]
 plot 'isoterma1.dat' w p pt 6 lc rgb 'red'   t 'C_1',\
      'isoterma2.dat' w p pt 6 lc rgb 'green' t 'C_2',\
      'isoterma3.dat' w p pt 6 lc rgb 'blue' t 'C_3',\

@@ -2,5 +2,5 @@ physically_constrained
 ncomp 2
 1.0 langmuir_sips
 1.0 langmuir_sips
-inter  4096
+inter  8192
 ffit? .true.
