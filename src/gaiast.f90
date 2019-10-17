@@ -218,8 +218,25 @@ module gaiast_globals
  real                       :: inferior
  real                       :: superior
  contains
+!
+  pure character(len=32) function real2bin(x)
+   implicit none
+   real,intent(in) :: x
+   write(real2bin(1:32) ,'(b32.32)') x
+   return
+  end function real2bin
+!
+  pure real function bin2real(a)
+   implicit none
+   character(len=32), intent(in) :: a
+   read(a(1:32),'(b32.32)') bin2real
+   return
+  end function bin2real
+!
   subroutine read_input()
   implicit none
+  integer          :: ii,i,j
+  character(len=4) :: realorbinary
   read_input_do: do
    read(5,'(A)',iostat=err_apertura)line
    if ( err_apertura /= 0 ) exit read_input_do
@@ -232,13 +249,9 @@ module gaiast_globals
     do ii=1,ncomponents
      read(5,*)concy(ii),ajuste(ii)
      string = ajuste(ii)
-     if(string=="UserDefined")then
-      read(5,*) Equation
-      read(5,*) np(ii)
-     else
-      call MakeInitPOP(string,npar)
-      np(ii) = npar
-     end if
+     call MakeInitPOP(string,npar)
+     np(ii) = npar
+     write(6,'(a,1x,i3,1x,a,1x,i3,1x,a)')'compound:',ii,'with',np(ii),'parameters'
     end do
     concy=concy/sum(concy)
     allocate(param(ncomponents,0:maxval(np)-1))
@@ -253,19 +266,35 @@ module gaiast_globals
       read(5,*)(param(ii,j),j=0,np(ii)-1)
      end do readparameter
     end if
-    cycle read_input_do
+    !cycle read_input_do
    end if
    if(line(1:5)=='refit') then
     write(6,*)'[WARN] Refitting parameters'
-    read(line,*)inpt,refit_flag
+    read(line,*)inpt,refit_flag,realorbinary
     if(refit_flag)then
-    do ii=1,ncomponents
-     do j=1,np(ii)
-      read(5,'(a32)')  string
-      read(string,'(a32)') string_IEEE(ii)(32*(j-1)+1:32*j)
-     end do
+     select case(realorbinary)
+     case('real')
+      do ii=1,ncomponents
+       read(5,*)(param(ii,j),j=0,np(ii)-1)
+      end do
+      do ii=1,ncomponents
+       write(6,'(a,1x,i3,1x,a,1x,i3,1x,a)')'compound:',ii,'with',np(ii),'parameters'
+       do j=1,np(ii)
+        string_IEEE(ii)(32*(j-1)+1:32*j)=real2bin( param( ii,j-1 ) )
+        write(6,'(i3,1x,i3,1x,f14.7,1x,a32)') ii,j,param( ii,j-1 ), string_IEEE(ii)(32*(j-1)+1:32*j)
+       end do
+      end do
+     case default
+      do ii=1,ncomponents
+       write(6,'(a,1x,i3,1x,a,1x,i3,1x,a)')'compound:',ii,'with',np(ii),'parameters'
+       do j=1,np(ii)
+        read(5,'(a32)') string_IEEE(ii)(32*(j-1)+1:32*j) 
+        param( ii,j-1 )=bin2real( string_IEEE(ii)(32*(j-1)+1:32*j) )
+        write(6,'(i3,1x,i3,1x,f14.7,1x,a32)') ii,j,param( ii,j-1 ), string_IEEE(ii)(32*(j-1)+1:32*j)
+       end do
+      end do
+     end select
      write(6,'(a)') string_IEEE(ii)
-    end do
     else
      do ii=1,ncomponents
       string_IEEE(ii)=' '
@@ -937,7 +966,7 @@ module mod_genetic
  use qsort_c_module
  implicit none
  !private
- !public :: fit,init,fitness
+ !public :: fit
  integer,parameter             :: GA_size     = 2**12 ! numero de cromosomas
  real,parameter                :: GA_MutationRate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
  real,parameter                :: GA_EliteRate= 0.25, GA_MotleyCrowdRate=0.25,GA_DisasterRate = 0.0000001
@@ -963,7 +992,8 @@ module mod_genetic
     new_citizen%genotype(i:i) = achar(randint(48,49))
    end do
    do i = 1,np(compound)
-    read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
+    new_citizen%phenotype(i) = bin2real( new_citizen%genotype(32*(i-1)+1:32*i) )
+    !read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
    end do
    new_citizen%fitness = fitness( new_citizen%phenotype,compound)
    return
@@ -1305,7 +1335,7 @@ module mod_genetic
    parents =>  pop_alpha
    children => pop_beta
    if ( refit_flag ) then
-    do i = 1, 2
+    do i = 1,GA_elitists 
      parents(i)%genotype=string_IEEE(compound)
      children(i)%genotype=string_IEEE(compound)
      call UpdateCitizen(parents(i),compound)

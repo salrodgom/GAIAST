@@ -1,4 +1,4 @@
-LINKFLAGS_FOR = -std=gnu -Wextra -Wall -pedantic -ffree-form -march=native -O3
+LINKFLAGS_FOR = -std=gnu -pedantic -ffree-form -march=native -O3
 COMP_FOR = gfortran
 GNUPLOT_SCRIPT = png.gp
 install:
