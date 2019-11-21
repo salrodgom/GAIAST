@@ -9,8 +9,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Run a basic test
-      run: |
-        cd gaiast/test/basic
-        make all
-        cd -
+      name: Display all
+      run: ls
