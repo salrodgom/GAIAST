@@ -958,6 +958,10 @@ module gaiast_globals
   end select
   return
  end function model
+!
+ subroutine clear_screen
+  write(*,'(a1,a)',advance="no") achar(27), '[2J'
+ end subroutine clear_screen
 end module gaiast_globals
 
 module mod_genetic
@@ -1356,12 +1360,12 @@ module mod_genetic
     fire: if ( FlagFire ) then
      if ( ii >= minstep .and. parents(1)%fitness <= TolFire ) exit converge
     else
-     if( ii>=minstep .and. parents(1)%fitness <= 0.2 .and. abs(parents(1)%fitness-fit0) <= 1e-4)then
+     if( ii>=minstep .and. parents(1)%fitness <= 0.1 .and. abs(parents(1)%fitness-fit0) <= 1e-5)then
       kk = kk + 1
      else
       kk = 0
      end if
-     if ( ii >= maxstep .or. kk >= 10 ) exit converge
+     if ( ii >= maxstep .or. kk >= 20 ) exit converge
     end if fire
     call Mate(compound)
     call Swap()
@@ -1709,6 +1713,7 @@ program main
  use mod_genetic
  use mod_simplex
  use, intrinsic :: iso_fortran_env
+ call clear_screen()
  print '(4a)', 'This file was compiled by ', &
        compiler_version(), ' using the options ', &
        compiler_options()
