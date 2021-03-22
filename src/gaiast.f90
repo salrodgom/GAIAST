@@ -1,7 +1,5 @@
 ! GAIAST
-! Salvador Rodriguez-Gomez
-! Rocio Bueno-Perez
-! Sofia Calero-Diaz
+! Salvador R.G. Balestra, Rocio Bueno-Perez, and Sofia Calero
 ! Wednesday, 09, November, 2016
 ! Wednesday, 13, Jun, 2018 ( add SIMPLEX optimisation)
 module mod_random
@@ -82,58 +80,6 @@ module mod_random
  end function r4_uniform
 end module mod_random
 !
-!module newton
-!   implicit none
-!   integer, parameter      :: maxiter = 20
-!   real(kind=8), parameter :: tol = 1.d-14
-!contains
-!!
-!subroutine solve(f, fp, x0, x, iters, debug)
-! ! Estimate the zero of f(x) using Newton's method.
-! ! Input:
-! !   f:  the function to find a root of
-! !   fp: function returning the derivative f'
-! !   x0: the initial guess
-! !   debug: logical, prints iterations if debug=.true.
-! ! Returns:
-! !   the estimate x satisfying f(x)=0 (assumes Newton converged!)
-! !   the number of iterations iters
-! implicit none
-! real(kind=8), intent(in)    :: x0
-! real(kind=8), external      :: f, fp
-! logical, intent(in)         :: debug
-! real(kind=8), intent(out)   :: x
-! integer, intent(out)        :: iters
-! ! Declare any local variables:
-! real(kind=8)                :: deltax, fx, fxprime
-! integer                     :: k
-! ! initial guess
-! x = x0
-! if (debug) write(6,'(a,1x,e22.15)') 'Initial guess: x = ',x
-! ! Newton iteration to find a zero of f(x)
-! do k=1,maxiter
-!     ! evaluate function and its derivative:
-!     fx = f(x)
-!     fxprime = fp(x)
-!     if (abs(fx) < tol) then
-!         exit  ! jump out of do loop
-!         endif
-!     ! compute Newton increment x:
-!     deltax = fx/fxprime
-!     ! update x:
-!     x = x - deltax
-!     if (debug) write(6,'(a,i3,1x,a,1x,e22.15)')'After',k,'iterations, x =',x
-! enddo
-! if (k > maxiter) then
-!  ! might not have converged
-!  fx = f(x)
-!  if (abs(fx) > tol) write(6,'(a)') '[Warning]: calculation has not converged yet'
-! endif
-! ! number of iterations taken:
-! iters = k-1
-!end subroutine solve
-!end module newton
-
 module qsort_c_module
 ! Recursive Fortran 95 quicksort routine sorts real numbers into ascending numerical order
 ! Author: Juli Rew, SCD Consulting (juliana@ucar.edu), 9/03
@@ -241,6 +187,7 @@ module gaiast_globals
    read(5,'(A)',iostat=err_apertura)line
    if ( err_apertura /= 0 ) exit read_input_do
    if(line(1:1)=='#') cycle read_input_do
+   if(line(1:3)=="end".or.line(1:)=="end_iast_input") exit read_input_do
    if(line(1:5)=='ncomp')then
     read(line,*)inpt,ncomponents
     allocate(ajuste(ncomponents),concy(ncomponents))
@@ -294,7 +241,7 @@ module gaiast_globals
        end do
       end do
      end select
-     write(6,'(a)') string_IEEE(ii)
+     write(6,'(a)') string_IEEE(1:ncomponents)
     else
      do ii=1,ncomponents
       string_IEEE(ii)=' '
@@ -322,7 +269,7 @@ module gaiast_globals
     write(6,'(a)') '[WARN] The fits are physically constrained'
    end if
    if(line(1:5)=='Fire?') then
-     read(line,*)inpt, FlagFire
+     read(line,*) inpt, FlagFire
      if(FlagFire) read(5,*) TolFire
    end if
    if(err_apertura/=0) exit read_input_do
@@ -433,10 +380,10 @@ module gaiast_globals
   integer          :: i,j,ijk,nn
   real,allocatable :: a(:)
   character(100)   :: funk
-  real           :: comp,dx,p,concx(ncomponents),pureloading(ncomponents)
-  real           :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
-  real           :: auxP,aux1,aux2,lastPi(ncomponents),piValue=0.0,x,last=0.0
-  logical        :: validPressure = .true., yIsZero = .true.,flag = .true.
+  real             :: comp,dx,p,concx(ncomponents),pureloading(ncomponents)
+  real             :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
+  real             :: auxP,aux1,aux2,lastPi(ncomponents),piValue=0.0,x,last=0.0
+  logical          :: validPressure = .true., yIsZero = .true.,flag = .true.
   dx = real((superior-inferior)/intervalos)
   i = 0
   lastPi = 0.0
@@ -531,20 +478,22 @@ module gaiast_globals
   real               :: oldPi, p,a1,a2,b1,b2,c,a,p1,p2
   integer            :: k,j,n
   real,allocatable   :: apar(:)
-  character(100)     :: funk,mode= 'integral' 
+  character(100)     :: funk
+  character(10)      :: solve_method = 'integral' ! OR "analytical"
   CalculatePressures = .true.
   k=1
   calc: do while (k<=ncomponents.and.CalculatePressures)
-! {{ interpolation and parameters from k-compound
+! {{ 
+!  Interpolation and parameters from k-compound
    funk = ajuste( k )
-   !if(funk=='langmuir') mode = 'analytical' !.or.funk=='langmuir_dualsite') mode = 'analytical'
+   !if(funk=='langmuir') solve_method = 'analytical' !.or.funk=='langmuir_dualsite') solve_method = 'analytical'
    n = np(k)
    allocate(apar(0:n-1))
    do j = 0, n-1
     apar(j) = param(k,j)
    end do
 ! }}
-   select case (mode)
+   select case (solve_method)
     case ('analytical')
      select case (funk)
       case ('langmuir')
@@ -1430,17 +1379,18 @@ real function func(n,x,compound) result(rosen)
   rosen = fitness(sp,compound)
   return
 end function func
+! 
+subroutine simplex(start, compound, n, EPSILON, scale, iprint)
 ! This is the simplex routine
 ! Michael F. Hutt
-subroutine simplex(start, compound, n, EPSILON, scale, iprint)
   implicit none
   integer, intent (in)                   :: n, iprint, compound
   real, intent (inout), dimension(0:n-1) :: start
   real, intent (in)                      :: EPSILON, scale
-  integer, parameter :: MAX_IT = 1000000
-  real, parameter    :: ALPHA=1.0
-  real, parameter    :: BETA=0.5
-  real, parameter    :: GAMMA=2.0
+  integer, parameter                     :: MAX_IT = 1000000
+  real, parameter                        :: ALPHA=1.0
+  real, parameter                        :: BETA=0.5
+  real, parameter                        :: GAMMA=2.0
 ! ======================================================================
 ! Variable Definitions
 ! vs = vertex with the smallest value
@@ -1670,14 +1620,13 @@ DO itr=1,MAX_IT
   !END DO
   !s = sqrt(s)
   If (favg .LT. EPSILON.or.itr==MAX_IT) Then
-
 ! print out the value at each iteration
-   Write(6,'(a,1x,i6)') "Final Values:", itr
+   Write(6,*) "Final Values:", itr
    Write(6,*) (v(vs,j),j=0,n-1),'Fit:',f(vs)
    IF(itr/=MAX_IT)then
-    write(6,'(a,1x,f14.7,1x,a,1x,f14.7)')'Nelder-Mead has converged:',favg,'<',epsilon
+    write(6,*)'Nelder-Mead has converged:',favg,'<',epsilon
    else
-    write(6,'(a,1x,i6,1x,a,1x,i6)')'Maximun number of steps:',itr,'=',MAX_IT
+    write(6,*)'Maximun number of steps:',itr,'=',MAX_IT
    end if
    EXIT ! Nelder Mead has converged - exit main loop
   END IF
