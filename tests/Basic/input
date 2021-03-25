@@ -1,6 +1,9 @@
 physically_constrained
 ncomp 2
-1.0 langmuir_sips
-1.0 langmuir_sips
-inter  8192
+1.0 asymtotic_temkin
+1.0 asymtotic_temkin
+inter 4096
 ffit? .true.
+refit .true. real
+11.0509529       1.24592129E-02  0.218820900    
+9.98243332       6.58445582E-02  0.489880353    

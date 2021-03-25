@@ -138,10 +138,11 @@ end module qsort_c_module
 module gaiast_globals
  use mod_random
  implicit none
- integer                    :: npar,ncomponents,i
+ integer                    :: npar,ncomponents,i,ii,j
  integer(8)                 :: seed = 0
  integer,allocatable        :: np(:)
- integer                    :: err_apertura,ii,intervalos,j
+ integer                    :: err_apertura
+ integer                    :: intervalos = 4096
  integer,parameter          :: integration_points = 10000
  real,parameter             :: precision_Newton = 1e-5
  real                       :: tol = 0.001, tolfire = 0.25
@@ -818,7 +819,7 @@ module gaiast_globals
    n=3
   case ("langmuir_dualsite")
    n=4
-  case ("langmuir_freundlich_dualsite")
+  case ("langmuir_freundlich_dualsite",'lf2')
    n=6
   case ("redlich_peterson_dualsite")
    n=6
@@ -835,7 +836,13 @@ module gaiast_globals
   case ("langmuir_sips")
    n=5
   case ("isobare")
-   n=4
+   n = 4
+  case ("asymtotic_temkin","cory")
+   n = 3
+  case ("Brunauer-Emmett-Teller","BET")
+   n = 3
+  case ("Quadratic")
+   n = 3
  end select
  return
  end subroutine MakeInitPOP
@@ -900,6 +907,13 @@ module gaiast_globals
     model = (a(0)*a(1)*xx)/(1+a(1)*xx) + (a(2)*a(3)*xx**a(4))/(1+a(3)*xx**a(4))
    case ("jensen_seaton","jsn")
     model = a(0)*xx*( 1.0 + ( a(0)*xx / (a(1)*( 1+a(2)*xx )) )**a(3) )**(-1.0/a(3))
+   case ("asymtotic_temkin","cory")
+    ! Asymptotic approximation to the Temkin Isotherm, (see DOI: 10.1039/C3CP55039G)
+    model = a(0)*(a(1)*xx/(1+a(1)*xx) + a(2)*((a(1)*xx/(1+a(1)*xx))**2)*(a(1)*xx/(1+a(1)*xx)-1))
+   case ("Brunauer-Emmett-Teller","BET")
+    model = a(0)*( a(1)*xx/((1-a(2)*xx)*(1-a(2)*xx+a(1)*xx)))
+   case ("Quadratic")
+    model = a(0)*xx*(a(1)+2*a(2)*xx)/(1+a(1)*xx+a(2)*xx*xx)
    case ("UserDefined")
     model = 0.0
    case ("isobare")
@@ -976,6 +990,7 @@ module mod_genetic
    do i = 0,np(compound)-1
     a(i) = phenotype(i+1)
    end do
+   penalty = 0.0
    phys_constrains: if ( physical_constrains ) then
      select case (funk)
       case ('langmuir')
@@ -983,8 +998,6 @@ module mod_genetic
         ! constrains:
         ! a>0, b>0
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ('langmuir_dualsite')
        if(a(0)<0.0.or.a(1)<0.0 .or.&
@@ -992,80 +1005,59 @@ module mod_genetic
         ! constrains:
         ! a>0, b>0, c>0, d>0
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ('toth')
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ('langmuir_freundlich')
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ('jovanovic_freundlich')
        if(a(0)<0.0.or.a(2)<0.or.a(2)>1.0)then
         ! constrains:
         ! a>0 ; 0 < c < 1
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ("redlich_peterson_dualsite")
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
           a(3)<0.0.or.a(4)<0.0.or.a(5)<0)then
         penalty = infinite
-       else
-        penalty = 0.0
        end if
-      case ('langmuir_freundlich_dualsite')
+      case ('langmuir_freundlich_dualsite','lf2')
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0 .or.&
           a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.a(5)>1.0 )then
-       !if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
-       !   a(3)<0.0.or.a(4)<0.0.or.a(5)<0 )then
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ('langmuir_freundlich_3order')
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
           a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.&
           a(6)<0.0.or.a(7)<0.0.or.a(8)<0)then
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ('jensen_seaton')
        if( a(0)<0 .or. a(1)<0 .or. a(2)<0.or.a(3)<0 ) then
         penalty = infinite
-       else
-        penalty = 0.0
        end if
       case ('langmuir_sips')
        if( a(0)<0.0.or.a(1)<0.0.or.a(4)<0.or.a(4)>1.0 .or.&
-           a(2)<0.0.or.a(3)<0.0 )then
+           a(2)<0.0.or.a(3)<0.0 )            penalty = infinite
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
-        penalty = infinite
-       else
-        penalty = 0.0
-       end if
+      case ("Quadratic")
+       if (a(0)<0.0.or.a(1)<0.0.or.a(2)<0.0) penalty = infinite
+      case ("asymtotic_temkin","cory")
+       if(a(0)<0.0.or.a(1)<0.0)              penalty = infinite
+       ! a(2) could be < 0 (for guest-guest attractions)
       case ("isobare")
-       if( a(0)<0.0 ) then
-        penalty = infinite
-       else
-        penalty = 0.0
-       end if
+       if( a(0)<0.0 )                        penalty = infinite
       case default
        penalty = 0.0
      end select
@@ -1102,7 +1094,7 @@ module mod_genetic
         wnowasteparam(1),wfitness,'[Fitness]','(',kkk,'/',vgh,')','[Similarity]' !,k
    do i=2,np(compound)
     if(lod>0.and.i==3)then
-     write(6,'(9x,a32,1x,e25.12,10x,a,1x,i2,a)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i),'Finishing:',lod,'/10'
+     write(6,'(9x,a32,1x,e25.12,10x,a,1x,i2,a)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i),'Finishing:',lod,'/20'
     else
      write(6,'(9x,a32,1x,e25.12)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i)
     end if
