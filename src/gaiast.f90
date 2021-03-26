@@ -158,7 +158,7 @@ module gaiast_globals
  character(5)                    :: inpt
  logical                         :: flag = .true., FlagFire = .false.,seed_flag=.true.
  logical                         :: physical_constrains = .false., range_flag =.true.
- logical                         :: Always_Use_Multicomponent_Solver=.true.
+ logical                         :: Always_Use_Multicomponent_Solver=.true., IAST_flag = .true.
  logical                         :: refit_flag = .false.
  real,parameter                  :: R = 0.008314472 ! kJ / mol / K
  real                            :: T = 298.0
@@ -262,6 +262,7 @@ module gaiast_globals
    end if
    if(line(1:5)=='tempe') read(line,*)inpt, T
    if(line(1:5)=='InteM') read(line,*)inpt, IntMethod
+   if(line(1:5)=="IAST ") read(line,*)inpt, IAST_flag
    if(line(1:22)=='physically_constrained') then
     physical_constrains=.true.
     write(6,'(a)') '[WARN] The fits are physically constrained'
@@ -1271,7 +1272,7 @@ module mod_genetic
    integer,intent(in)     :: compound
    integer                :: kk, ii, i, k,vgh
    integer,parameter      :: maxstep = 500, minstep = 10, kk_max = 20
-   real,parameter         :: tolerance_equal_fitness = 1e-5, minimum_fitness = 1.0e-1
+   real,parameter         :: tolerance_equal_fitness = 1e-5, minimum_fitness = 5.0e-1
    real                   :: diff = 0.0, fit0 = 0.0
    integer                :: eps
    kk = 0
@@ -1685,13 +1686,15 @@ program main
    call fit_simplex()
   end do
  end if
- call bounds()
- if(ncomponents>2.or.Always_Use_Multicomponent_Solver)then
-  ! Always_Use_Multicomponent_Solver defined in the header of gaiast_globals module
-  call IAST_multicomponent()
- else
-  ! It works fine
-  call IAST_binary()
+ if (IAST_flag) then
+  call bounds()
+  if(ncomponents>2.or.Always_Use_Multicomponent_Solver)then
+   ! Always_Use_Multicomponent_Solver defined in the header of gaiast_globals module
+   call IAST_multicomponent()
+  else
+   ! It works fine
+   call IAST_binary()
+  end if
  end if
  call cite()
  close(111)
