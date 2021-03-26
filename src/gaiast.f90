@@ -138,32 +138,32 @@ end module qsort_c_module
 module gaiast_globals
  use mod_random
  implicit none
- integer                    :: npar,ncomponents,i,ii,j
- integer(8)                 :: seed = 0
- integer,allocatable        :: np(:)
- integer                    :: err_apertura
- integer                    :: intervalos = 4096
- integer,parameter          :: integration_points = 10000
- real,parameter             :: precision_Newton = 1e-5
- real                       :: tol = 0.001, tolfire = 0.25
- real,allocatable           :: param(:,:),concy(:),pi(:,:),iso(:,:)
- integer,allocatable        :: npress(:)
- integer                    :: compound
- integer,parameter          :: maxnp = 10, maxcompounds = 10, maxdata = 1000
- real,target                :: datas(2,maxcompounds,maxdata),f(maxdata)
- real,pointer               :: x(:),y(:),alldat(:,:)
+ integer                         :: npar,ncomponents,i,ii,j
+ integer(8)                      :: seed = 0
+ integer,allocatable             :: np(:)
+ integer                         :: err_apertura
+ integer                         :: intervalos = 4096
+ integer,parameter               :: integration_points = 10000
+ real,parameter                  :: precision_Newton = 1e-5
+ real                            :: tol = 0.001, tolfire = 0.25
+ real,allocatable                :: param(:,:),concy(:),pi(:,:),iso(:,:)
+ integer,allocatable             :: npress(:)
+ integer                         :: compound
+ integer,parameter               :: maxnp = 10, maxcompounds = 10, maxdata = 1000
+ real,target                     :: datas(2,maxcompounds,maxdata),f(maxdata)
+ real,pointer                    :: x(:),y(:),alldat(:,:)
  character(100),allocatable      :: ajuste(:)
  character(32*maxnp),allocatable :: string_IEEE(:)
- character(100)             :: line,string,intmethod,Equation
- character(5)               :: inpt
- logical                    :: flag = .true., FlagFire = .false.,seed_flag=.true.
- logical                    :: physical_constrains = .false., range_flag =.true.
- logical                    :: Always_Use_Multicomponent_Solver=.true.
- logical                    :: refit_flag = .false.
- real,parameter             :: R = 0.008314472 ! kJ / mol / K
- real                       :: T = 298.0
- real                       :: inferior
- real                       :: superior
+ character(100)                  :: line,string,intmethod,Equation
+ character(5)                    :: inpt
+ logical                         :: flag = .true., FlagFire = .false.,seed_flag=.true.
+ logical                         :: physical_constrains = .false., range_flag =.true.
+ logical                         :: Always_Use_Multicomponent_Solver=.true.
+ logical                         :: refit_flag = .false.
+ real,parameter                  :: R = 0.008314472 ! kJ / mol / K
+ real                            :: T = 298.0
+ real                            :: inferior
+ real                            :: superior
  contains
 !
   pure character(len=32) function real2bin(x)
@@ -182,8 +182,8 @@ module gaiast_globals
 !
   subroutine read_input()
   implicit none
-  integer          :: ii,i,j
-  character(len=4) :: realorbinary
+  integer                    :: ii,i,j
+  character(len=4)           :: realorbinary
   read_input_do: do
    read(5,'(A)',iostat=err_apertura)line
    if ( err_apertura /= 0 ) exit read_input_do
@@ -242,16 +242,13 @@ module gaiast_globals
        end do
       end do
      end select
-     write(6,'(a)') string_IEEE(1:ncomponents)
+     write(6,'(a)') string_IEEE(1:ncomponents)(1:32*np(ii))
     else
-     do ii=1,ncomponents
-      string_IEEE(ii)=' '
-     end do
+     string_IEEE(1:ncomponents)=' '
     end if
    end if
    if(line(1:5)=='inter') then
-     read(line,*)inpt,intervalos
-     allocate(pi(ncomponents,0:intervalos),iso(ncomponents,0:intervalos))
+    read(line,*)inpt,intervalos
    end if
    if(line(1:5)=='toler') read(line,*)inpt, Tol
    if(line(1:5)=='Range')then
@@ -275,6 +272,8 @@ module gaiast_globals
    end if
    if(err_apertura/=0) exit read_input_do
   end do read_input_do
+  ! Allocate defaults options:
+  allocate(pi(ncomponents,0:intervalos),iso(ncomponents,0:intervalos))
  end subroutine read_input
 ! ...
  subroutine bounds()
@@ -1270,10 +1269,11 @@ module mod_genetic
   subroutine Fit(compound)
    implicit none
    integer,intent(in)     :: compound
-   integer,parameter  :: maxstep = 500, minstep = 10
-   integer            :: kk, ii, i, k,vgh
-   real               :: diff = 0.0, fit0 = 0.0
-   integer            :: eps
+   integer                :: kk, ii, i, k,vgh
+   integer,parameter      :: maxstep = 500, minstep = 10, kk_max = 20
+   real,parameter         :: tolerance_equal_fitness = 1e-5, minimum_fitness = 1.0e-1
+   real                   :: diff = 0.0, fit0 = 0.0
+   integer                :: eps
    kk = 0
    ii = 0
    pop_alpha = [(new_citizen(compound), i = 1,ga_size)]
@@ -1295,18 +1295,20 @@ module mod_genetic
     ii=ii+1
     if ( ii == 1 ) write(6,'(a)') 'Go Down the Rabbit Hole >'
     call SortByFitness()
-    call WriteCitizen(1,ii,eps,compound,kk, vgh )
+    call WriteCitizen(1,ii,eps,compound, kk, vgh )
     diff = eps
     eps = Biodiversity( compound, children, vgh )
-    fire: if ( FlagFire ) then
+    fire: if ( FlagFire ) then ! Avoid!
      if ( ii >= minstep .and. parents(1)%fitness <= TolFire ) exit converge
     else
-     if( ii>=minstep .and. parents(1)%fitness <= 0.1 .and. abs(parents(1)%fitness-fit0) <= 1e-5)then
+     if( ii>=minstep .and. parents(1)%fitness <= minimum_fitness  .and.&
+         abs(parents(1)%fitness-fit0) <= tolerance_equal_fitness ) then
       kk = kk + 1
      else
       kk = 0
      end if
-     if ( ii >= maxstep .or. kk >= 20 ) exit converge
+     ! System converges!
+     if ( ii >= maxstep .or. kk > kk_max ) exit converge
     end if fire
     call Mate(compound)
     call Swap()
