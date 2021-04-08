@@ -158,7 +158,7 @@ module gaiast_globals
  character(5)                    :: inpt
  logical                         :: flag = .true., FlagFire = .false.,seed_flag=.true.
  logical                         :: physical_constrains = .false., range_flag =.true.
- logical                         :: Always_Use_Multicomponent_Solver=.true., IAST_flag = .true.
+ logical                         :: Always_Use_Multicomponent_Solver=.false., IAST_flag = .true.
  logical                         :: refit_flag = .false.
  real,parameter                  :: R = 0.008314472 ! kJ / mol / K
  real                            :: T = 298.0
