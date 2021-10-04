@@ -12,7 +12,7 @@ set xlabel "Fugacity / Pa"
 set ylabel "Loading / mol/kg"
 set multiplot layout 1,2
 set logscale x
-set xrange [1e-1:1e4]
+set xrange [:1e4]
 ! sort -gk1 adsorcion.dat > c ; mv c adsorcion.dat
 plot 'isoterma1.dat' w p pt 7 lc rgb "red"   t "A",\
      'isoterma2.dat' w p pt 7 lc rgb "dark-green" t "B",\
@@ -21,7 +21,6 @@ plot 'isoterma1.dat' w p pt 7 lc rgb "red"   t "A",\
      'curves.txt' u 4:5 w l lt 1 lc rgb "dark-green" notitle,\
      'curves.txt' u 7:8 w l lt 1 lc rgb "orange" notitle
 unset ytics
-set autoscale
 set key outside
 set ytics nomirror
 set y2tics nomirror

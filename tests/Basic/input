@@ -1,10 +1,10 @@
 physically_constrained               # This keyword allow us to take into account some physical constraints that the parameters must have in the fitting.
 #                                    # These constraints are hardcoded for each model.
 ncomp 3                              # Two Compounds in the Mixture
-0.50  langmuir_freundlich_dualsite   # Molar Fraction (is normalized)  and  Isotherm model of the Pure compound adsorption
-0.25  asymtotic_temkin               # (idem)
-0.25  asymtotic_temkin               # (idem)
-inter 4096                           # How many pressure points
+0.4  langmuir_freundlich_dualsite   # Molar Fraction (is normalized)  and  Isotherm model of the Pure compound adsorption
+0.3  asymtotic_temkin               # (idem)
+0.3  asymtotic_temkin               # (idem)
+inter 10000                           # How many pressure points
 # Here we tell the program that we know the parameters of the isotherms and that no adjustment is necessary
 ffit? .false. real
 0.420558    7.99311733      1.0          10.6405  0.00990972   1.0

@@ -316,8 +316,9 @@ module gaiast_globals
    end do
   end if
 !  ...
-  write(6,*)'Inf:',inferior
-  write(6,*)'Sup:',superior
+  write(6,'(a)')'------------- Bounds --------------'
+  write(6,'(a,1x,e20.10)')'Inf:',inferior
+  write(6,'(a,1x,e20.10)')'Sup:',superior
 !  ...
   superior = log( superior )
   inferior = log( inferior )
@@ -422,7 +423,7 @@ module gaiast_globals
   real             :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
   real             :: auxP,aux1,aux2,lastPi(ncomponents),piValue=0.0,x,last=0.0
   logical          :: validPressure = .true., yIsZero = .true.,flag = .true.
-  dx = real((superior-inferior)/intervalos)
+  dx = real((superior-inferior)/real(intervalos))
   i = 0
   lastPi = 0.0
   presion = 0.0
@@ -434,7 +435,7 @@ module gaiast_globals
     aux1 = 0
     aux2 = 0
     auxP = datas(1,1,npress(1))
-    presion(1,i) = exp(inferior+i*dx)
+    presion(1,i) = exp(inferior+(i+1)*dx)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
     validPressure=CalculatePressures(presion,i,lastPi,piValue) 
@@ -523,7 +524,7 @@ module gaiast_globals
 ! {{ 
 !  Interpolation and parameters from k-compound
    funk = ajuste( k )
-   !if(funk=='langmuir') solve_method = 'analytical' !.or.funk=='langmuir_dualsite') solve_method = 'analytical'
+   if(funk=='langmuir') solve_method = 'analytical' !.or.funk=='langmuir_dualsite') solve_method = 'analytical'
    n = np(k)
    allocate(apar(0:n-1))
    do j = 0, n-1
