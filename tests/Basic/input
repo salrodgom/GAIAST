@@ -1,9 +1,18 @@
-physically_constrained
-ncomp 2
-1.0 langmuir_freundlich_dualsite
-1.0 asymtotic_temkin
-inter 4096
-ffit? .true.
-refit .true. real
-0.420558 7.99311733 1.0 10.6405 0.00990972 1.0
-  9.98243332       6.58450425E-02  0.490123659    
+physically_constrained               # This keyword allow us to take into account some physical constraints that the parameters must have in the fitting.
+#                                    # These constraints are hardcoded for each model.
+ncomp 3                              # Two Compounds in the Mixture
+0.50  langmuir_freundlich_dualsite   # Molar Fraction (is normalized)  and  Isotherm model of the Pure compound adsorption
+0.25  asymtotic_temkin               # (idem)
+0.25  asymtotic_temkin               # (idem)
+inter 4096                           # How many pressure points
+# Here we tell the program that we know the parameters of the isotherms and that no adjustment is necessary
+ffit? .false. real
+0.420558    7.99311733      1.0          10.6405  0.00990972   1.0
+9.98243332  6.58450425E-02  0.490123659
+9.98243332  6.58450425E-02  0.490123659
+Breakthrough .true.
+end_gaiast
+# End of input, you can put whatever you want after this line, it will not be taken into account
+refit .true.  real
+0.420558    7.99311733      1.0          10.6405  0.00990972   1.0
+9.98243332  6.58450425E-02  0.490123659    

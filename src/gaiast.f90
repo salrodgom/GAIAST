@@ -158,8 +158,9 @@ module gaiast_globals
  character(5)                    :: inpt
  logical                         :: flag = .true., FlagFire = .false.,seed_flag=.true.
  logical                         :: physical_constrains = .false., range_flag =.true.
- logical                         :: Always_Use_Multicomponent_Solver=.false., IAST_flag = .true.
+ logical                         :: Always_Use_Multicomponent_Solver=.true., IAST_flag = .true.
  logical                         :: refit_flag = .false.
+ logical                         :: Breakthrough_flag = .false.
  real,parameter                  :: R = 0.008314472 ! kJ / mol / K
  real                            :: T = 298.0
  real                            :: inferior
@@ -186,9 +187,8 @@ module gaiast_globals
   character(len=4)           :: realorbinary
   read_input_do: do
    read(5,'(A)',iostat=err_apertura)line
-   if ( err_apertura /= 0 ) exit read_input_do
+   if ( err_apertura /= 0 .or. line(1:3)=="end" .or. line(1:)=="end_gaiast" ) exit read_input_do
    if(line(1:1)=='#') cycle read_input_do
-   if(line(1:3)=="end".or.line(1:)=="end_iast_input") exit read_input_do
    if(line(1:5)=='ncomp')then
     read(line,*)inpt,ncomponents
     allocate(ajuste(ncomponents),concy(ncomponents))
@@ -207,12 +207,31 @@ module gaiast_globals
     cycle read_input_do
    end if
    if(line(1:5)=='ffit?')then
-    read(line,*)inpt,flag
+    read(line,*)inpt,flag,realorbinary
     if(flag.eqv..false.)then
      write(6,*)'[WARN] Fit is already done'
-     readparameter: do ii=1,ncomponents
-      read(5,*)(param(ii,j),j=0,np(ii)-1)
-     end do readparameter
+     select case(realorbinary)
+      case('real')
+       readparameter: do ii=1,ncomponents
+        read(5,*)(param(ii,j),j=0,np(ii)-1)
+       end do readparameter
+       do ii=1,ncomponents
+        write(6,'(a,1x,i3,1x,a,1x,i3,1x,a)')'compound:',ii,'with',np(ii),'parameters'
+        do j=1,np(ii)
+         string_IEEE(ii)(32*(j-1)+1:32*j)=real2bin( param( ii,j-1 ) )
+         write(6,'(i3,1x,i3,1x,f14.7,1x,a32)') ii,j,param( ii,j-1 ), string_IEEE(ii)(32*(j-1)+1:32*j)
+        end do
+       end do
+      case default ! Binary
+      do ii=1,ncomponents
+       write(6,'(a,1x,i3,1x,a,1x,i3,1x,a)')'compound:',ii,'with',np(ii),'parameters'
+       do j=1,np(ii)
+        read(5,'(a32)') string_IEEE(ii)(32*(j-1)+1:32*j) 
+        param( ii,j-1 )=bin2real( string_IEEE(ii)(32*(j-1)+1:32*j) )
+        write(6,'(i3,1x,i3,1x,f14.7,1x,a32)') ii,j,param( ii,j-1 ), string_IEEE(ii)(32*(j-1)+1:32*j)
+       end do
+      end do
+     end select 
     end if
     !cycle read_input_do
    end if
@@ -247,6 +266,7 @@ module gaiast_globals
      string_IEEE(1:ncomponents)=' '
     end if
    end if
+   if(line(1:12)=="Breakthrough") Breakthrough_flag =.true.
    if(line(1:5)=='inter') then
     read(line,*)inpt,intervalos
    end if
@@ -375,11 +395,28 @@ module gaiast_globals
   deallocate(j_tolerance)
   return
  end subroutine IAST_binary
+!
+ subroutine Breakthrough()
+  ! from program: breakthrough_implicit_dimensionless_backward_cranknicolson_F2
+  implicit none
+  !use module types
+  write(6,'(a)') '------- Breakthrough Curves --------'
+  write(6,'(a)') '# Not yet'
+  write(6,'(a)') '------------------------------------'
+  !contains
+  !module types
+  !subroutine ImplicitSolver
+  !subroutine ComputePressureGradient
+  !subroutine ComputeVelocityProfile
+  !subroutine backslash # (Matlab function)
+  !subroutine ComputeSurfaceLoading
+  ! write in files ..
+ end subroutine Breakthrough
 ! ...
  subroutine IAST_multicomponent()
   implicit none
   integer          :: i,j,ijk,nn
-  real,allocatable :: a(:)
+  real,allocatable :: a(:)         ! <- parameters
   character(100)   :: funk
   real             :: comp,dx,p,concx(ncomponents),pureloading(ncomponents)
   real             :: presion(0:ncomponents,0:intervalos-1),n(0:ncomponents)
@@ -400,9 +437,8 @@ module gaiast_globals
     presion(1,i) = exp(inferior+i*dx)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
-    validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG! (why??, is it a mistake?)
+    validPressure=CalculatePressures(presion,i,lastPi,piValue) 
     if(validPressure.and.i>0)then
-     !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
      continue
     else
      i=i+1
@@ -779,10 +815,15 @@ module gaiast_globals
     case ("langmuir_freundlich")
  ! Also known as the Sips equation
      write(6,'(a,1x,i3)')'Model',iii
-     write(6,*)'R. Sips, J. Chem. Phys., (1948); http://dx.doi.org/10.1063/1.1746922'
-     write(6,*)'R. Sips, J. Chem. Phys. 18, 1024 (1950); http://dx.doi.org/10.1063/1.1747848'
-     !write(6,*)'Turiel et al., 2003, DOI: 10.1039/B210712K'
-     !write(6,*)'Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., & Shimizu, K. D. (2001)., 73(19), 4584-4591.'
+     write(6,'(a)')'R. Sips, J. Chem. Phys., (1948); DOI: 10.1063/1.1746922'
+     write(6,'(a)')'R. Sips, J. Chem. Phys. 18, 1024 (1950); DOI: 10.1063/1.1747848'
+     write(6,'(a)')'Turiel et al., Analyst, 2003,128, 137-141 , DOI: 10.1039/B210712K'
+     !write(6,*)'Umpleby, R. J., Baxter, S. C., Chen, Y., Shah, R. N., &
+     !           Shimizu, K. D. (2001)., 73(19), 4584-4591.'
+    case ("asymtotic_temkin","cory")
+     ! Asymptotic approximation to the Temkin Isotherm, (see DOI: 10.1039/C3CP55039G)
+     write(6,'(a,1x,i3)')'Model',iii
+     write(6,'(a)') 'Cory M. Simon et al. Phys. Chem. Chem. Phys., 2014,16, 5499-5513, DOI: 10.1039/C3CP55039G'
     case ("langmuir_sips")
      write(6,'(a,1x,i3)')'Model',iii
      write(6,'(8x,a)')"I. Langmuir, J. Am. Chem. Soc., 1916, 38(11), 2221–2295."
@@ -1696,6 +1737,7 @@ program main
    call IAST_binary()
   end if
  end if
+ if (Breakthrough_flag) call Breakthrough()
  call cite()
  close(111)
  write(6,'(a)')'====================================='
