@@ -1,24 +1,16 @@
 <a name="top"></a>
-## Genetic Algorithm IAST [![GitHub tag](https://img.shields.io/github/tag/salrodgom/gaiast.svg)]() 
+## Genetic Algorithm IAST [![GitHub tag](https://img.shields.io/github/tag/salrodgom/gaiast.svg)]() [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.165844.svg)](https://doi.org/10.5281/zenodo.165844)
 
 [![License](https://img.shields.io/badge/license-GNU%20GeneraL%20Public%20License%20v3,%20GPLv3-blue.svg)]()
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.165844.svg)](https://doi.org/10.5281/zenodo.165844)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)]()
-
-- This is the gaIAST code. 
-- gaIAST is Fortran 2008+ standard compliant;
-- gaIAST is a Free, Open Source Project.
-
-#### Compiler Support
-
 [![Compiler](https://img.shields.io/badge/GNU-pass%20(v4.9.2+)-brightgreen.svg)]()
 [![Compiler](https://img.shields.io/badge/Intel-pass%20(v12.x+)-brightgreen.svg)]()
 [![Compiler](https://img.shields.io/badge/IBM%20XL-not%20tested-yellow.svg)]()
 [![Compiler](https://img.shields.io/badge/g95-not%20tested-yellow.svg)]()
 
-#### Copyrights
 
-GAIAST is an open source project, it is distributed under a multi-licensing system:
+This is the GAIAST code, it is Fortran 2008+ standard compliant and is free, and an open source project.
+It is distributed under a multi-licensing system:
 
 + for open/free/libre projects:
   - [GPL v3](http://www.gnu.org/licenses/gpl-3.0.html);
@@ -29,7 +21,7 @@ GAIAST is an open source project, it is distributed under a multi-licensing syst
 
 ### What is gaIAST?
 
-- We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the adsorbed phase,
+We use Ideal Adsorbed Solution Theory (IAST) to predict the loading of the gas mixture on the adsorbed phase,
 based only on the knowledge of the pure adsorption isotherms of the individual components.
 
 ### Updates:
