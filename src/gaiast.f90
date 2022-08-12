@@ -94,9 +94,9 @@ module qsort_c_module
   real(16), intent(in out), dimension(:) :: A
   integer                            :: iq
   if(size(A) > 1) then
-   call Partition(A, iq)
-   call QsortC(A(:iq-1))
-   call QsortC(A(iq:))
+     call Partition(A, iq)
+     call QsortC(A(:iq-1))
+     call QsortC(A(iq:))
   endif
  end subroutine QsortC
 !
@@ -154,8 +154,7 @@ module gaiast_globals
  real,pointer                    :: x(:),y(:),alldat(:,:)
  character(100),allocatable      :: ajuste(:)
  character(32*maxnp),allocatable :: string_IEEE(:)
- character(100)                  :: line,string,Equation
- character(10)                   :: IntMethod = "integral"
+ character(100)                  :: line,string,intmethod,Equation
  character(5)                    :: inpt
  logical                         :: flag = .true., FlagFire = .false.,seed_flag=.true.
  logical                         :: physical_constrains = .false., range_flag =.true.
@@ -163,8 +162,8 @@ module gaiast_globals
  logical                         :: refit_flag = .false.
  real,parameter                  :: R = 0.008314472 ! kJ / mol / K
  real                            :: T = 298.0
- real                            :: inferior = 0.0
- real                            :: superior = 1.0e30
+ real                            :: inferior
+ real                            :: superior
  contains
 !
   pure character(len=32) function real2bin(x)
@@ -265,8 +264,6 @@ module gaiast_globals
    if(line(1:5)=='Range')then
     read(line,*)inpt, inferior, superior
     range_flag = .false.
-    write(6,'(a,1x,e20.10)')'Lower Limit:', inferior
-    write(6,'(a,1x,e20.10)')'Upper Limit:', superior
     write(6,'(a)')'[WARN] Fugacity range specified'
    end if
    if(line(1:5)=='RSeed') then
@@ -274,10 +271,7 @@ module gaiast_globals
     read(line,*)inpt, seed
    end if
    if(line(1:5)=='tempe') read(line,*)inpt, T
-   if(line(1:5)=='InteM') then
-    read(line,*)inpt, IntMethod
-    write(6,'(a,1x,a)') 'Integral Method:', IntMethod
-   end if
+   if(line(1:5)=='InteM') read(line,*)inpt, IntMethod
    if(line(1:5)=="IAST ") read(line,*)inpt, IAST_flag
    if(line(1:22)=='physically_constrained') then
     physical_constrains=.true.
@@ -302,13 +296,19 @@ module gaiast_globals
   character(len=100) :: funk
   s1 = 0.0
   if (range_flag) then
-   superior = maxval( datas(1,:,:) )
-   inferior = minval( datas(1,:,:) )
+   superior = 0.0
+   inferior = 1.0e30
+   do ib = 1,ncomponents
+    do jb = 1,npress(ib)
+     if( datas(1,ib,jb) >= superior) superior = datas(1,ib,jb)
+     if( datas(1,ib,jb) <= inferior) inferior = datas(1,ib,jb)
+    end do
+   end do
   end if
-! dev: check:
-  write(6,'(a,1x,e20.10)')'Lower Limit:', inferior
-  write(6,'(a,1x,e20.10)')'Upper Limit:', superior
-! Transform to log-PressureScale
+!  ...
+  write(6,*)'Inf:',inferior
+  write(6,*)'Sup:',superior
+!  ...
   superior = log( superior )
   inferior = log( inferior )
   dx = real((superior-inferior)/real(intervalos))   ! log-space
@@ -410,8 +410,7 @@ module gaiast_globals
     presion(1,i) = exp(inferior+(i+1)*dx)
     last    = lastPi(1)                       !<---- works
     piValue = CalculatePi(1,presion,i,last)   !<---- works
-
-    validPressure = CalculatePressures(presion,i,lastPi,piValue) 
+    validPressure=CalculatePressures(presion,i,lastPi,piValue)   !<- WRONG! (why??, is it a mistake?)
     if(validPressure.and.i>0)then
      !write(6,*)i,(presion(ijk,i),ijk=1,ncomponents),piValue
      continue
@@ -485,23 +484,20 @@ module gaiast_globals
  logical function CalculatePressures(presion,point,lastPi,piValue)
   implicit none
   integer,intent(in) :: point
-  real,intent(inout) :: presion(0:ncomponents,0:intervalos-1)
-  real,intent(inout) :: piValue
+  real,intent(inout) :: presion(0:ncomponents,0:intervalos-1),piValue
   real,intent(inout) :: lastPi(ncomponents)
-  real               :: oldPi,p,a1,a2,b1,b2,c,a,p1,p2
+  real               :: oldPi, p,a1,a2,b1,b2,c,a,p1,p2
   integer            :: k,j,n
   real,allocatable   :: apar(:)
   character(100)     :: funk
-  character(10)      :: solve_method 
-!
-  solve_method = IntMethod
+  character(10)      :: solve_method = 'integral' ! OR "analytical"
   CalculatePressures = .true.
   k=1
   calc: do while (k<=ncomponents.and.CalculatePressures)
 ! {{ 
 !  Interpolation and parameters from k-compound
    funk = ajuste( k )
-   if (funk=='langmuir'.or.funk=='langmuir_freundlich'.or.funk=='lf') solve_method = 'analytical'
+   !if(funk=='langmuir') solve_method = 'analytical' !.or.funk=='langmuir_dualsite') solve_method = 'analytical'
    n = np(k)
    allocate(apar(0:n-1))
    do j = 0, n-1
@@ -512,26 +508,23 @@ module gaiast_globals
     case ('analytical')
      select case (funk)
       case ('langmuir')
-       presion(k,point) = (exp(piValue/apar(0))-1/apar(1)) ! f(p) = apar(0)*apar(1)*p/(1+apar(1)*p)
-      case ('lf','langmuir_freundlich')                    ! 
-       presion(k,point) = (exp(piValue/apar(0))-1/apar(1))**(1.0/apar(2)) ! f(p) = apar(0)*apar(1)*p**apar(2)/(1+apar(1)*p**apar(2))
+      presion(k,point) = (exp(piValue/apar(0))-1/apar(1))
+      !case('langmuir_dualsite')
      end select
-    case ('integral','Integral')
-    ! Integral:
+    case ('integral')
      oldPi = lastPi(k)
      apar = 0.0
      do j = 0, n-1
       apar(j) = param(k,j)
      end do
      if (point==0) then
-      p = exp(inferior)
+      p = 0.0
       presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
      else
       p = presion(k,point-1)
       presion(k,point) = CalculatePressureIntegral(k,p,apar,n,funk,oldPi,piValue)
      end if
     case default
-     ! Linear
      presion(k,point) = CalculatePressureLinear(k,piValue)
    end select
    lastPi(k) = piValue
@@ -563,10 +556,9 @@ module gaiast_globals
    if(j==0)then
      deltaPi=datas(2,compound,j+1) ! isother(k,j+1,1)
    else
-     deltaPi=(datas(2,compound,j+1)-datas(2,compound,j)) &
-      +(datas(1,compound,j+1)*datas(2,compound,j) &
-      - datas(1,compound,j)*datas(2,compound,j+1))*log(datas(1,compound,j+1)/datas(1,compound,j))/&
-      (datas(1,compound,j+1)-datas(1,compound,j))
+     deltaPi=(datas(2,compound,j+1)-datas(2,compound,j))+(datas(1,compound,j+1)*datas(2,compound,j) &
+            - datas(1,compound,j)*datas(2,compound,j+1))*log(datas(1,compound,j+1)/datas(1,compound,j))/&
+              (datas(1,compound,j+1)-datas(1,compound,j))
    end if
    if(piGuess+deltaPi>=piValue)then
     if(j==0)then
@@ -580,7 +572,7 @@ module gaiast_globals
     if(j==npress(compound)-1) lastPass = .true.
    end if
   end do
-  if (lastPass.and.piGuess<piValue) CalculatePressureLinear = 0.0
+  if(lastPass.and.piGuess<piValue) CalculatePressureLinear = 0.0
   return
  end function CalculatePressureLinear
 !
@@ -627,8 +619,8 @@ module gaiast_globals
  end if
  return
  end function SolveNewtonLinear
-!
- pure real function Integrate(x0,x1,a,n,funk)
+
+ pure real function integrate(x0,x1,a,n,funk)
   implicit none
   integer              ::  i
   integer,intent(in)   ::  n
@@ -648,16 +640,16 @@ module gaiast_globals
   end do area
   return
  end function integrate
-!
+
  real function CalculatePressureIntegral(k,x0,a,n,funk,oldPi,piValue)
   implicit none
   integer,intent(in)       :: k,n
   integer                  :: i
-  integer,parameter        :: imax = 10000000
+  integer,parameter        :: imax = 100000000
   real                     :: x, delta, integral
   real,intent(in)          :: a(0:n-1), x0,oldPi,piValue
   character(100),intent(in):: funk
-  character(100)           :: mode = 'version2'
+  character(100)           :: mode = 'version1'
   integral = 0.0
   x = 0.0
   i = 0
@@ -667,26 +659,27 @@ module gaiast_globals
    delta = x0/real(integration_points)!+x0)
   end if
   pressint: do while ( oldPi+ integral <= piValue )
-   select case (mode)
-    case ('version1')
-     !Integrate by the paralelogram rule
-     x=x0+delta*(0.5+i)
-     Integral = Integral + delta*model(a,n,x,funk)/x
-    case ('version2')
-     x=x0+delta*0.5*(i*i+2.0*i+1.0)
-     Integral = Integral + delta*model(a,n,x,funk)/x
-   end select
-   i = i + 1
-   !
-   if(oldPi + Integral >= piValue)then
-    if((oldPi + Integral)/piValue >= 1.1) then
-     write(6,*)'Integal greater than Pi!',(oldPi + Integral)/piValue
-    end if
+  select case (mode)
+   case ('version1')
+    !Integrate by the paralelogram rule
+    x=x0+delta*(0.5+i)
+    Integral = Integral + delta*model(a,n,x,funk)/x
+    i = i+1
+   case ('version2')
+    x=x0+delta*0.5*(i*i+2.0*i+1.0)
+    Integral = Integral + delta*model(a,n,x,funk)/x
+    i = i+1
+  end select
+  !
+  if(oldPi + Integral >= piValue)then
+   if((oldPi + Integral)/piValue >= 1.1) then
+    write(6,*)'Integal greater than Pi!',(oldPi + Integral)/piValue
    end if
-   if (i==imax) then
-     write(6,*)'Overflow in the integral. Compound:',k,piValue,oldPi + Integral
-     exit pressint
-   end if
+  end if
+  if (i==imax) then
+    write(6,*)'Overflow in the integral. Compound:',k,piValue,oldPi + Integral
+    exit pressint
+  end if
   end do pressint
   CalculatePressureIntegral = x
   !write(6,*)'[CalculatePressureIntegral]',i,k,CalculatePressureIntegral,oldPi,piValue,x0,delta
@@ -969,19 +962,18 @@ module mod_genetic
  type(typ_ga), target          :: pop_beta( ga_size )
  contains
 !
-  type(typ_ga) function new_citizen(jj)
+  type(typ_ga) function new_citizen(compound)
    implicit none
-   integer, intent(in) :: jj
-   integer,            :: ii
+   integer     :: i,compound,j,k
    new_citizen%genotype = ' '
-   do ii = 1,32*np(jj)
-    new_citizen%genotype(ii:ii) = achar(randint(48,49))
+   do i = 1,32*np(compound)
+    new_citizen%genotype(i:i) = achar(randint(48,49))
    end do
-   do ii = 1,np(jj)
-    new_citizen%phenotype(ii) = bin2real( new_citizen%genotype(32*(ii-1)+1:32*ii) )
+   do i = 1,np(compound)
+    new_citizen%phenotype(i) = bin2real( new_citizen%genotype(32*(i-1)+1:32*i) )
     !read(new_citizen%genotype(32*(i-1)+1:32*i),'(b32.32)') new_citizen%phenotype(i)
    end do
-   new_citizen%fitness = fitness( new_citizen%phenotype,jj)
+   new_citizen%fitness = fitness( new_citizen%phenotype,compound)
    return
   end function new_citizen
 !
@@ -1035,32 +1027,32 @@ module mod_genetic
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0)then
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
-                                             penalty = infinite
+        penalty = infinite
        end if
       case ('jovanovic_freundlich')
        if(a(0)<0.0.or.a(2)<0.or.a(2)>1.0)then
         ! constrains:
         ! a>0 ; 0 < c < 1
-                                             penalty = infinite
+        penalty = infinite
        end if
       case ("redlich_peterson_dualsite")
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
           a(3)<0.0.or.a(4)<0.0.or.a(5)<0)then
-                                             penalty = infinite
+        penalty = infinite
        end if
       case ('langmuir_freundlich_dualsite','lf2')
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.a(2)>1.0 .or.&
           a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.a(5)>1.0 )then
         ! constrains:
         ! a>0 ; b>0 ; 0 < c < 1
-                                             penalty = infinite
+        penalty = infinite
        end if
       case ('langmuir_freundlich_3order','lf3')
        if(a(0)<0.0.or.a(1)<0.0.or.a(2)<0.or.&
           a(3)<0.0.or.a(4)<0.0.or.a(5)<0.or.&
           a(6)<0.0.or.a(7)<0.0.or.a(8)<0.or.&
           a(2)>1.0.or.a(5)>1.0.or.a(8)>1.0 )then
-                                             penalty = infinite
+        penalty = infinite
        end if
       case ('jensen_seaton')
        if( a(0)<0 .or. a(1)<0 .or. a(2)<0.or.a(3)<0 ) then
@@ -1090,7 +1082,7 @@ module mod_genetic
      log(datas(1,Compound,npress(Compound))-datas(1,Compound,1)+1)
    end do
    if(isnan(fitness)) fitness      = 99999999.999999
-   if(fitness==0.0000000000) fitness= 99999999.999999
+   if(fitness==0.0000000000)fitness= 99999999.999999
    return
   end function Fitness
 
@@ -1111,7 +1103,7 @@ module mod_genetic
    end do
    wfitness = parents(k)%fitness
    write(6,'(i2,1x,i5,1x,a32,1x,e25.12,1x,f14.7,1x,a,1x,a,i8,a,i8,a,1x,a)')compound,kk,wnowaste(1:32),&
-        wnowasteparam(1),wfitness,'[1/Fitness]','(',kkk,'/',vgh,')','[Similarity]' !,k
+        wnowasteparam(1),wfitness,'[Fitness]','(',kkk,'/',vgh,')','[Similarity]' !,k
    do i=2,np(compound)
     if(lod>0.and.i==3)then
      write(6,'(9x,a32,1x,e25.12,10x,a,1x,i2,a)')wnowaste(1+32*(i-1):32*i),wnowasteparam(i),'Finishing:',lod,'/20'
