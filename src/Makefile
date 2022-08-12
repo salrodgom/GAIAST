@@ -1,6 +1,6 @@
 LINKFLAGS_FOR = -std=gnu -pedantic -ffree-form -march=native -O3
 COMP_FOR = gfortran
-GNUPLOT_SCRIPT = png.gp
+GNUPLOT_SCRIPT = plot_fit
 install:
 	${COMP_FOR} ${LINKFLAGS_FOR} gaiast.f90 -o gaiast
 all:
