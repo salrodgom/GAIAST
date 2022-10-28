@@ -4,19 +4,13 @@
 ! Results.dat-MAF-x8-P1-Repeat-433K-ethylbenzene -> isoterma4.dat
 physically_constrained
 
-ncomp 4
+ncomp 1
 1.0 lf2            ! p-xylene
-1.0 lf3            ! o-xylene
-1.0 lf2            ! m-xylene
-1.0 langmuir_sips  ! ethylbenzene
 
 IAST  .false.
+ffit? .true. real
 refit .true. real
-1.55820227    12.4323120      0.551450849       1.79871047       3024074.00      0.999999881    
-1.80991840    0.974488854     0.274963796       1.69129467       513625.000      0.927189350      0.228403479       6.22555717E-07   2.81202933E-03
-1.67114806    4.15891838      0.293215841       1.61437464       768308.000      0.984899759    
-0.908376932   32767.5195      1.95898998        3.63831496       0.339897484  
-
+1.6  1.07e1    0.54 1.8     4.97e7  1.2
 end
 
 # Initial parameters:

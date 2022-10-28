@@ -937,7 +937,8 @@ module gaiast_globals
   write(*,'(a1,a)',advance="no") achar(27), '[2J'
  end subroutine clear_screen
 end module gaiast_globals
-
+!
+!------------------------------------------------- Fitting:
 module mod_genetic
  use mod_random
  use gaiast_globals
@@ -945,8 +946,8 @@ module mod_genetic
  implicit none
  !private
  !public :: fit
- integer,parameter             :: GA_size     = 2**12 ! numero de cromosomas
- real,parameter                :: GA_MutationRate = 0.3333 !2000/real(ga_size) ! ga_mutationrate=0.333
+ integer,parameter             :: GA_size     = 2**12              ! population
+ real,parameter                :: GA_MutationRate = 0.3333         !
  real,parameter                :: GA_EliteRate= 0.25, GA_MotleyCrowdRate=0.25,GA_DisasterRate = 0.0000001
  integer,parameter             :: maxlinelength=maxnp*32
  integer,parameter             :: ga_Elitists = int( ga_size * ga_eliterate)
