@@ -1,0 +1,10 @@
+#!/bin/bash
+cd src
+ make install
+cd ..
+mv src/fitting.exe .
+time ./fitting.exe < input.data
+rm -rf fitting.exe
+cd src
+ make clean
+cd ..

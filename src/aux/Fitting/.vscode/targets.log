@@ -1,0 +1,431 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+make: *** No rule to make target 'all'.  Stop.
+
+# GNU Make 4.3
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2020 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Mon Aug 15 12:33:42 2022
+
+# Variables
+
+# environment
+GDK_BACKEND = x11
+# environment
+LC_ALL = C
+# environment
+COSMA_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib'
+# environment
+GJS_DEBUG_OUTPUT = stderr
+# environment
+C_INCLUDE_PATH = :/usr/local/cuda/include:/home/salvador/software/plumed/plumed2/include
+# environment
+VSCODE_CWD = /home/salvador
+# environment
+LIBSPG_INCLUDE_DIR = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/include
+# environment
+LIBSPGROOT = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0
+# environment
+WINDOWPATH = 2
+# environment
+SPFFT_ROOT = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13
+# environment
+GDM_LANG = en_GB.UTF-8
+# environment
+LIBVORI_LIBS = -lvori -lstdc++
+# default
+MAKE_COMMAND := make
+# environment
+QT_ACCESSIBILITY = 1
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# environment
+GSL_CFLAGS = -I'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/include'
+# environment
+LIBVORI_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229/lib'
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# default
+.VARIABLES := 
+# environment
+COSMA_CUDA_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib/cuda' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib/cuda'
+# environment
+PWD = /home/salvador/software/gaiast/tests/Fitting
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# environment
+SPFFT_CFLAGS = -I'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/include'
+# environment
+COSMA_CFLAGS = -I'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/include'
+# environment
+XDG_DATA_DIRS = /usr/share/gnome:/home/salvador/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# automatic
+%F = $(notdir $%)
+# environment
+CONDA_PROMPT_MODIFIER = (base) 
+# environment
+VSCODE_CODE_CACHE_PATH = /home/salvador/.config/Code/CachedData/6d9b74a70ca9c7733b29f0456fd8195364076dda
+# environment
+GSL_INCLUDE_DIR = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/include
+# environment
+LIBVDWXC_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib'
+# environment
+FFTW_CFLAGS = -I'/usr/include'
+# environment
+GSLROOT = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6
+# environment
+LANG = C
+# environment
+COSMA_ROOT = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0
+# environment
+VALGRIND_OPTIONS = --suppressions=/home/salvador/software/cp2k/cp2k/tools/toolchain/install/valgrind.supp --max-stackframe=2168152 --error-exitcode=42
+# environment
+XAUTHORITY = /run/user/1000/gdm/Xauthority
+# default
+.LOADED := 
+# default
+.INCLUDE_DIRS = /usr/local/include /usr/include /usr/include
+# makefile
+MAKEFLAGS = pqrR
+# environment
+HDF5_ROOT = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0
+# environment
+PKG_CONFIG_PATH = /home/salvador/software/gromacs/lib/pkgconfig:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib/pkgconfig:/lib/pkgconfig:/home/salvador/software/gromacs/lib/pkgconfig:/home/salvador/software/cp2k/cp2k-8.1.0/tools/toolchain/install/libvdwxc-0.4.0/lib/pkgconfig:/home/salvador/software/gromacs/lib/pkgconfig:/home/salvador/software/cp2k/cp2k-8.1.0/tools/toolchain/install/cosma-2.2.0/lib/pkgconfig:/home/salvador/software/cp2k/cp2k-8.1.0/tools/toolchain/install/gsl-2.6/lib64/pkgconfig:/home/salvador/software/cp2k/cp2k-8.1.0/tools/toolchain/install/gsl-2.6/lib/pkgconfig:/home/salvador/software/cp2k/cp2k-8.1.0/tools/toolchain/install/SpFFT-0.9.13/lib64/pkgconfig:/home/salvador/software/cp2k/cp2k-8.1.0/tools/toolchain/install/SpFFT-0.9.13/lib/pkgconfig:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib/pkgconfig:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib64/pkgconfig:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib/pkgconfig:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib64/pkgconfig:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib/pkgconfig
+# makefile
+CURDIR := /home/salvador/software/gaiast/tests/Fitting
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+VDWXC_DIR = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0
+# environment
+MFLAGS = -pqrR
+# environment
+SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
+# default
+.SHELLFLAGS := -c
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# environment
+HDF5_INCLUDE_DIRS = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/include
+# environment
+FFTW_LDFLAGS = 
+# environment
+XDG_SESSION_DESKTOP = gnome
+# makefile
+MAKEFILE_LIST := 
+# environment
+CONDA_SHLVL = 1
+# environment
+SPFFT_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib'
+# automatic
+@F = $(notdir $@)
+# environment
+VSCODE_PID = 10787
+# environment
+COSMA_VERSION = 2.2.0
+# environment
+XDG_SESSION_TYPE = x11
+# environment
+TSAN_OPTIONS = suppressions=/home/salvador/software/cp2k/cp2k/tools/toolchain/install/tsan.supp
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# environment
+CONDA_PYTHON_EXE = /home/salvador/anaconda3/bin/python
+# environment
+SESSION_MANAGER = local/kraken:@/tmp/.ICE-unix/1635,unix/kraken:/tmp/.ICE-unix/1635
+# automatic
+*F = $(notdir $*)
+# environment
+FFTW_ROOT = 
+# environment
+SPFFT_LIBS = -lspfft
+# environment
+MANPATH = /home/salvador/software/gromacs/share/man:
+# environment
+CHROME_DESKTOP = code-url-handler.desktop
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en-gb","availableLanguages":{},"_languagePackSupport":true}
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# environment
+GNOME_DESKTOP_SESSION_ID = this-is-deprecated
+# environment
+LIBVORI_VERSION = 201229
+# makefile
+SHELL = /bin/sh
+# environment
+CONDA_PREFIX = /home/salvador/anaconda3
+# default
+MAKECMDGOALS := all
+# environment
+XMODIFIERS = @im=ibus
+# environment
+LD_LIBRARY_PATH = /home/salvador/software/gromacs/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/sirius-7.0.0/lib/cuda:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/sirius-7.0.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/plumed-2.6.2/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/scalapack-2.1.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxsmm-1.16.1/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxc-5.1.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libint-v2.6.0-cp2k-lmax-5/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/openmpi-4.0.5/lib:/usr/local/cuda/lib64:/home/salvador/software/plumed/plumed2/lib
+# environment
+GJS_DEBUG_TOPICS = JS ERROR;JS LOG
+# environment
+SHLVL = 0
+# environment
+PROJ_LIB = /home/salvador/anaconda3/share/proj
+# environment
+MAKELEVEL := 0
+# default
+MAKE = $(MAKE_COMMAND)
+# environment
+PATH = /home/salvador/.local/bin:/home/salvador/bin:/home/salvador/anaconda3/bin:/home/salvador/anaconda3/condabin:/home/salvador/software/gromacs/bin:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxsmm-1.16.1/bin:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/openmpi-4.0.5/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/snap/bin:/home/salvador/bin:/usr/local/cuda/bin:/home/salvador/software/sod/bin:/home/salvador/software/plumed/plumed2/bin
+# environment
+SPGLIB_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/lib'
+# environment
+SPFFT_INCLUDE_DIR = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/include
+# default
+MAKEFILES := 
+# environment
+LANGUAGE = en_GB:en
+# environment
+CP_DFLAGS =  -D__FFTW3 IF_COVERAGE(IF_MPI(|-U__FFTW3)|) IF_MPI(-D__COSMA|) IF_MPI(-D__GSL|) IF_MPI(-D__HDF5|) IF_MPI(-D__LIBVDWXC|) -D__SPGLIB -D__LIBVORI IF_MPI(-D__SPFFT|)
+# automatic
+^F = $(notdir $^)
+# environment
+PLUMED_KERNEL = /home/salvador/software/plumed/plumed2/lib/libplumedKernel.so
+# environment
+LIBVORI_LIBRARY = -lvori
+# environment
+SPFFT_CUDA_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib/cuda' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib/cuda'
+# environment
+HDF5_LIBRARIES = -lhdf5 -lhdf5_hl
+# environment
+SPGLIB_CFLAGS = -I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/include -I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/include
+# environment
+INVOCATION_ID = b75a6966748844318fa420ea07a087ac
+# environment
+GMXLDLIB = /home/salvador/software/gromacs/lib
+# environment
+USERNAME = salvador
+# environment
+PLUMED_VIMPATH = /home/salvador/software/plumed/plumed2/lib/plumed/vim
+# automatic
+?F = $(notdir $?)
+# environment
+CP_LDFLAGS =   IF_CUDA(-L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib/cuda' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib/cuda'|-L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib') -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib' -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/lib' IF_MPI(-L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib'|) -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/lib' -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229/lib' IF_CUDA(-L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib/cuda' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib/cuda'|-L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib')
+# environment
+XDG_CURRENT_DESKTOP = GNOME
+# environment
+LS_COLORS = 
+# automatic
++F = $(notdir $+)
+# environment
+DESKTOP_SESSION = gnome
+# environment
+ORIGINAL_XDG_CURRENT_DESKTOP = GNOME
+# 'override' directive
+GNUMAKEFLAGS := 
+# environment
+CONDA_DEFAULT_ENV = base
+# environment
+CPATH = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/sirius-7.0.0/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxc-5.1.0/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libint-v2.6.0-cp2k-lmax-5/include:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/openmpi-4.0.5/include
+# environment
+LOGNAME = salvador
+# environment
+FFTW_LIBS = -lfftw3 -lfftw3_omp
+# environment
+GSL_LIBRARY = -lgsl
+# environment
+PROJ_NETWORK = ON
+# environment
+GIO_LAUNCHED_DESKTOP_FILE = /usr/share/applications/code.desktop
+# environment
+SPFFT_LIBRARY = -lspfft
+# environment
+LD_RUN_PATH = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/sirius-7.0.0/lib/cuda:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/sirius-7.0.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/plumed-2.6.2/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/scalapack-2.1.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxsmm-1.16.1/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxc-5.1.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libint-v2.6.0-cp2k-lmax-5/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/openmpi-4.0.5/lib
+# environment
+COSMA_LIBS = -lcosma_pxgemm -lcosma -lgrid2grid IF_CUDA(-lTiled-MM|)
+# makefile
+.DEFAULT_GOAL := 
+# environment
+GMXMAN = /home/salvador/software/gromacs/share/man
+# environment
+EDITOR = vim
+# environment
+DISPLAY = :0
+# environment
+USER = salvador
+# environment
+GTK_MODULES = gail:atk-bridge
+# environment
+COSMA_INCLUDE_DIR = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/include
+# environment
+LIBRARY_PATH = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/sirius-7.0.0/lib/cuda:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/sirius-7.0.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/plumed-2.6.2/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/scalapack-2.1.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxsmm-1.16.1/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libxc-5.1.0/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libint-v2.6.0-cp2k-lmax-5/lib:/home/salvador/software/cp2k/cp2k/tools/toolchain/install/openmpi-4.0.5/lib
+ 
+# default
+MAKE_VERSION := 4.3
+# environment
+CP_CFLAGS =  -I'/usr/include' -I'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/cosma-2.2.0/include' -I'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/include' -I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/include IF_MPI(-I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/include|) -I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/spglib-1.16.0/include -I'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/SpFFT-0.9.13/include'
+# environment
+CP2K_TOOLCHAIN_OPTIONS = --with-gcc=system --with-openmpi=install --with-plumed=install --with-openblas=system --with-cmake=system -j 12
+# environment
+HDF5_HL_LIBRARIES = -lhdf5 -lhdf5_hl
+# environment
+GSETTINGS_SCHEMA_DIR_CONDA_BACKUP = 
+# environment
+MANAGERPID = 1267
+# environment
+LIBVDWXC_LIBS = -lvdwxc
+# environment
+GMXBIN = /home/salvador/software/gromacs/bin
+# environment
+GIO_LAUNCHED_DESKTOP_FILE_PID = 10787
+# environment
+CP_LIBS = IF_MPI(-lspfft|) -lsymspg IF_MPI(-lvdwxc|) IF_MPI(-lhdf5 -lhdf5_hl|) IF_MPI(-lgsl -lgslcblas|) IF_MPI(-lcosma_pxgemm -lcosma -lgrid2grid IF_CUDA(-lTiled-MM|)|) IF_MPI(-lfftw3_mpi|) -lfftw3 -lfftw3_omp  -lvori -lstdc++
+# environment
+PYTHONPATH = :/home/salvador/software/plumed/plumed2/plumed/python
+# environment
+SSH_AGENT_PID = 1595
+# environment
+_ = /usr/share/code/code
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# environment
+GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
+# environment
+_CE_M = 
+# environment
+GSL_CBLAS_LIBRARY = -lgslcblas
+# environment
+CPLUS_INCLUDE_PATH = :/usr/local/cuda/include:/home/salvador/software/plumed/plumed2/include
+# environment
+LIBVORI_ROOT = /home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvori-201229
+# environment
+JOURNAL_STREAM = 8:29039
+# environment
+VISUAL = vim
+# environment
+LIBVDWXC_CFLAGS = -I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/include -I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/libvdwxc-0.4.0/include
+# environment
+XDG_SESSION_CLASS = user
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+HOME = /home/salvador
+# environment
+QT_IM_MODULE = ibus
+# environment
+GSL_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/gsl-2.6/lib'
+# environment
+HDF5_CFLAGS = -I/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/include
+# environment
+ELECTRON_RUN_AS_NODE = 1
+# environment
+VSCODE_IPC_HOOK = /run/user/1000/vscode-5c127e8a-1.70.1-main.sock
+# environment
+GSETTINGS_SCHEMA_DIR = /home/salvador/anaconda3/share/glib-2.0/schemas
+# environment
+IM_CONFIG_PHASE = 1
+# default
+.RECIPEPREFIX := 
+# automatic
+<F = $(notdir $<)
+# default
+SUFFIXES := 
+# environment
+GROMACS_DIR = /home/salvador/software/gromacs
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink load
+# environment
+GMXDATA = /home/salvador/software/gromacs/share/gromacs
+# environment
+SPFFT_VERSION = ver
+# environment
+PLUMED_PATH = /home/salvador/software/plumed/plumed2
+# environment
+XDG_MENU_PREFIX = gnome-
+# environment
+HDF5_LDFLAGS = -L'/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/lib' -Wl,-rpath='/home/salvador/software/cp2k/cp2k/tools/toolchain/install/hdf5-1.12.0/lib'
+# environment
+LSAN_OPTIONS = suppressions=/home/salvador/software/cp2k/cp2k/tools/toolchain/install/lsan.supp
+# environment
+CONDA_EXE = /home/salvador/anaconda3/bin/conda
+# environment
+_CE_CONDA = 
+# environment
+GDMSESSION = gnome
+# variable set hash-table stats:
+# Load=173/1024=17%, Rehash=0, Collisions=19/200=10%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 2070, inode 29098599): 9 files, no impossibilities.
+
+# 9 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Failed to be updated.
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+all:
+#  Command line target.
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has not been updated.
+
+# Not a target:
+makefile:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Failed to be updated.
+
+# Not a target:
+GNUmakefile:
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Failed to be updated.
+
+# files hash-table stats:
+# Load=6/1024=1%, Rehash=0, Collisions=0/15=0%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 17 / storage = 188 B / avg = 11 B
+# current buf: size = 8162 B / used = 188 B / count = 17 / avg = 11 B
+
+# strcache performance: lookups = 20 / hit rate = 15%
+# hash-table stats:
+# Load=17/8192=0%, Rehash=0, Collisions=0/20=0%
+# Finished Make data base on Mon Aug 15 12:33:42 2022
+
+ 

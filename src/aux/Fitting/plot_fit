@@ -1,0 +1,14 @@
+#!/usr/bin/gnuplot -persist
+#set terminal pngcairo size 820,308 enhanced font 'Helvetica,20'
+#set o 'Fitting.png'
+set term postscript eps color enhanced blacktext 'Helvetica,22'
+set out 'Fitting.eps'
+set size ratio 1
+set k top left
+set format x "10^{%L}"
+set xlabel "Fugacity [Pa]"
+set ylabel "Loading [mol/kg]"
+set logscale x 
+p 'model.0.dat' u 1:2 lc rgb 'red' pt 7 notitle,'' u 1:3 w l lc rgb 'red' title 'o-xylene',\
+  'model.1.dat' u 1:2 lc rgb 'blue' pt 5 notitle,'' u 1:3 w l lc rgb 'blue' title 'm-xylene',\
+  'model.2.dat' u 1:2 lc rgb 'green' pt 3 notitle,'' u 1:3 w l lc rgb 'green' title 'p-xylene'

@@ -1,0 +1,31 @@
+SimulationType           Fitting    
+
+DisplayName              MAF-X8
+PressureRange            1.0e-8 1.0e+8
+
+ModelConstrained
+#RestartFit
+
+Component 0 o-xylene
+            CompoundPureIsothermFileName         Results.dat-MAF-x8-P1-Repeat-433K-o-xylene
+            CompoundPureIsothermColumnPressure   3
+            CompoundPureIsothermColumnLoading    8
+            NumberOfIsothermSites      2
+             Langmuir-Freundlich        1.7  7.74e-1  0.4
+             Langmuir-Freundlich        1.8  5.53e6   1.1
+
+#Component 1 m-xylene
+#            CompoundPureIsothermFileName         Results.dat-MAF-x8-P1-Repeat-433K-m-xylene
+#            CompoundPureIsothermColumnPressure   3
+#            CompoundPureIsothermColumnLoading    8
+#            NumberOfIsothermSites      2
+#            Langmuir-Freundlich        1.4  1.22e1  0.57
+#            Langmuir-Freundlich        1.8  2.68e6  1.07
+#
+#Component 2 p-xylene
+#            CompoundPureIsothermFileName         Results.dat-MAF-x8-P1-Repeat-433K-p-xylene
+#            CompoundPureIsothermColumnPressure   3
+#            CompoundPureIsothermColumnLoading    8
+#            NumberOfIsothermSites      2
+#            Langmuir-Freundlich        1.6  1.07e1  0.54
+#            Langmuir-Freundlich        1.8  4.97e7  1.2
